@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(books C)
+project(books C CXX)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 include_directories(.)
 include_directories(deps)
@@ -27,8 +30,23 @@ endif()
 # Add backend define
 add_definitions(${BACKEND})
 
+# Build cimgui as static library
+add_library(cimgui STATIC
+    deps/cimgui/cimgui.cpp
+    deps/cimgui/imgui/imgui.cpp
+    deps/cimgui/imgui/imgui_draw.cpp
+    deps/cimgui/imgui/imgui_tables.cpp
+    deps/cimgui/imgui/imgui_widgets.cpp
+)
+
+target_include_directories(cimgui PUBLIC deps/cimgui)
+target_compile_features(cimgui PRIVATE cxx_std_11)
+
 add_executable(books
     src/main.c
     deps/deps.c
+    deps/deps.cpp
 )
+
+target_link_libraries(books cimgui ${PLATFORM_LIBS})
 
