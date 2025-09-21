@@ -11,6 +11,7 @@
 static struct {
     sg_pass_action pass_action;
     bool show_window;
+    bool show_demo;
 } state = {0};
 
 void frame(void)
@@ -23,37 +24,46 @@ void frame(void)
     });
 
     /*=== UI CODE STARTS HERE ===*/
+    if (igBeginMainMenuBar()) {
+        if (igBeginMenu("File", true)) {
+            if (igMenuItem_Bool("New", "Ctrl+N", false, true)) {
+                state.show_window = true;
+                // Handle new file
+            }
+            if (igMenuItem_Bool("Open", "Ctrl+O", false, true)) {
+                // Handle open file
+            }
+            if (igMenuItem_Bool("Save", "Ctrl+S", false, true)) {
+                // Handle save file
+            }
+            igSeparator();
+            if (igMenuItem_Bool("Exit", "Alt+F4", false, true)) {
+                sapp_quit();
+            }
+            igEndMenu();
+        }
+        if (igBeginMenu("Debug", true)) {
+            if (igMenuItem_Bool("Demo", "", false, true)) {
+                state.show_demo = true;
+            }
+            igEndMenu();
+        }
+        igEndMainMenuBar();
+    }
 
     ImGuiID dockspace_id = igGetID_Str("MyDockSpace");
     ImGuiDockNodeFlags dock_flags = ImGuiDockNodeFlags_None;
     igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), dock_flags, NULL);
-    //
 
-    if (state.show_window) {
+    if (state.show_demo) {
         igShowDemoWindow(&state.show_window);
     }
 
-    // bool my_tool_active;
-    // // Create a window called "My First Tool", with a menu bar.
-    // igBegin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
-    // if (igBeginMenuBar())
-    // {
-    //     if (igBeginMenu("File", true))
-    //     {
-    //         if (igMenuItem_Bool("Open..", "Ctrl+O", false, true)) { /* Do stuff */ }
-    //         if (igMenuItem_Bool("Save", "Ctrl+S", false, true))   { /* Do stuff */ }
-    //         if (igMenuItem_Bool("Close", "Ctrl+W", false, true))  { my_tool_active = false; }
-    //         igEndMenu();
-    //     }
-    //     igEndMenuBar();
-    // }
-    // igEnd();
-
     if (state.show_window) {
-        if (igBegin("Window", &state.show_window, ImGuiWindowFlags_None)) {
+        if (state.show_window && igBegin("Window", &state.show_window, ImGuiWindowFlags_None)) {
 
-            igEnd();
         }
+        igEnd();
     }
 
 
