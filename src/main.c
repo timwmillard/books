@@ -43,9 +43,8 @@ void draw_ui(void)
         igEndMainMenuBar();
     }
 
-    ImGuiID dockspace_id = igGetID_Str("MyDockSpace");
-    ImGuiDockNodeFlags dock_flags = ImGuiDockNodeFlags_None;
-    igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), dock_flags, NULL);
+    ImGuiID dockspace_id = igGetID_Str("MainDockSpace");
+    igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), ImGuiDockNodeFlags_None, NULL);
 
     if (state.show_demo) {
         igShowDemoWindow(&state.show_window);
