@@ -25,8 +25,7 @@ void frame(void)
     /*=== UI CODE STARTS HERE ===*/
 
     ImGuiID dockspace_id = igGetID_Str("MyDockSpace");
-    ImGuiDockNodeFlags dock_flags = ImGuiDockNodeFlags_KeepAliveOnly;
-    // ImGuiDockNodeFlags_PassthruCentralNode
+    ImGuiDockNodeFlags dock_flags = ImGuiDockNodeFlags_None;
     igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), dock_flags, NULL);
     //
 
@@ -85,6 +84,9 @@ void init(void)
     });
     simgui_setup(&(simgui_desc_t){ 0 });
 
+    // Enable docking
+    ImGuiIO* io = igGetIO_Nil();
+    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     // initial clear color
     state.pass_action = (sg_pass_action) {
