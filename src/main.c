@@ -14,16 +14,8 @@ static struct {
     bool show_demo;
 } state = {0};
 
-void frame(void)
+void draw_ui(void)
 {
-    simgui_new_frame(&(simgui_frame_desc_t){
-        .width = sapp_width(),
-        .height = sapp_height(),
-        .delta_time = sapp_frame_duration(),
-        .dpi_scale = sapp_dpi_scale(),
-    });
-
-    /*=== UI CODE STARTS HERE ===*/
     if (igBeginMainMenuBar()) {
         if (igBeginMenu("File", true)) {
             if (igMenuItem_Bool("New", "Ctrl+N", false, true)) {
@@ -65,11 +57,19 @@ void frame(void)
         }
         igEnd();
     }
+}
 
+void frame(void)
+{
+    simgui_new_frame(&(simgui_frame_desc_t){
+        .width = sapp_width(),
+        .height = sapp_height(),
+        .delta_time = sapp_frame_duration(),
+        .dpi_scale = sapp_dpi_scale(),
+    });
 
-    /*=== UI CODE ENDS HERE ===*/
+    draw_ui();
 
-    // the sokol_gfx draw pass
     sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = sglue_swapchain() });
     simgui_render();
     sg_end_pass();
