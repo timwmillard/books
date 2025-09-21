@@ -10,10 +10,34 @@
 
 static struct {
     sg_pass_action pass_action;
+    bool show_window;
 } state = {0};
 
-void frame(void) {
-    // Main loop code here
+void frame(void)
+{
+    simgui_new_frame(&(simgui_frame_desc_t){
+        .width = sapp_width(),
+        .height = sapp_height(),
+        .delta_time = sapp_frame_duration(),
+        .dpi_scale = sapp_dpi_scale(),
+    });
+
+    /*=== UI CODE STARTS HERE ===*/
+
+    if (state.show_window) {
+        if (igBegin("Window", &state.show_window, ImGuiWindowFlags_None)) {
+
+            igEnd();
+        }
+    }
+
+    /*=== UI CODE ENDS HERE ===*/
+
+    // the sokol_gfx draw pass
+    sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = sglue_swapchain() });
+    simgui_render();
+    sg_end_pass();
+    sg_commit();
 }
 
 void event(const sapp_event *ev)
@@ -21,6 +45,7 @@ void event(const sapp_event *ev)
     if (ev->type == SAPP_EVENTTYPE_KEY_DOWN && ev->key_code == SAPP_KEYCODE_ESCAPE) {
         sapp_quit();
     }
+    simgui_handle_event(ev);
 }
 
 void init(void)
@@ -40,7 +65,8 @@ void init(void)
 
 
 void cleanup(void) {
-    // Cleanup code here
+    // simgui_shutdown();
+    sg_shutdown();
 }
 
 sapp_desc sokol_main(int argc, char* argv[]) {
