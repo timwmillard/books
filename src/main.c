@@ -24,12 +24,39 @@ void frame(void)
 
     /*=== UI CODE STARTS HERE ===*/
 
+    ImGuiID dockspace_id = igGetID_Str("MyDockSpace");
+    ImGuiDockNodeFlags dock_flags = ImGuiDockNodeFlags_KeepAliveOnly;
+    // ImGuiDockNodeFlags_PassthruCentralNode
+    igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), dock_flags, NULL);
+    //
+
+    if (state.show_window) {
+        igShowDemoWindow(&state.show_window);
+    }
+
+    // bool my_tool_active;
+    // // Create a window called "My First Tool", with a menu bar.
+    // igBegin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
+    // if (igBeginMenuBar())
+    // {
+    //     if (igBeginMenu("File", true))
+    //     {
+    //         if (igMenuItem_Bool("Open..", "Ctrl+O", false, true)) { /* Do stuff */ }
+    //         if (igMenuItem_Bool("Save", "Ctrl+S", false, true))   { /* Do stuff */ }
+    //         if (igMenuItem_Bool("Close", "Ctrl+W", false, true))  { my_tool_active = false; }
+    //         igEndMenu();
+    //     }
+    //     igEndMenuBar();
+    // }
+    // igEnd();
+
     if (state.show_window) {
         if (igBegin("Window", &state.show_window, ImGuiWindowFlags_None)) {
 
             igEnd();
         }
     }
+
 
     /*=== UI CODE ENDS HERE ===*/
 
@@ -50,6 +77,8 @@ void event(const sapp_event *ev)
 
 void init(void)
 {
+    state.show_window = true;
+
     sg_setup(&(sg_desc){
         .environment = sglue_environment(),
         .logger.func = slog_func,
@@ -65,7 +94,7 @@ void init(void)
 
 
 void cleanup(void) {
-    // simgui_shutdown();
+    simgui_shutdown();
     sg_shutdown();
 }
 
@@ -75,8 +104,8 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         .frame_cb = frame,
         .cleanup_cb = cleanup,
         .event_cb = event,
-        .width = 800,
-        .height = 600,
+        .width = 1200,
+        .height = 800,
         .window_title = "Books",
     };
 }

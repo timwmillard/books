@@ -37,6 +37,7 @@ add_library(cimgui STATIC
     deps/cimgui/imgui/imgui_draw.cpp
     deps/cimgui/imgui/imgui_tables.cpp
     deps/cimgui/imgui/imgui_widgets.cpp
+    deps/cimgui/imgui/imgui_demo.cpp
 )
 
 target_include_directories(cimgui PUBLIC deps/cimgui)
