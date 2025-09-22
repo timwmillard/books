@@ -130,17 +130,12 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     }
 
     // Execute embedded schema
-    char *schema_sql = malloc(sql_schema_sql_len + 1);
-    memcpy(schema_sql, sql_schema_sql, sql_schema_sql_len);
-    schema_sql[sql_schema_sql_len] = '\0';
-
     char *err_msg = NULL;
-    rc = sqlite3_exec(state.db, schema_sql, NULL, NULL, &err_msg);
+    rc = sqlite3_exec(state.db, (char*)sql_schema_sql, NULL, NULL, &err_msg);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "Schema execution failed: %s\n", err_msg);
         sqlite3_free(err_msg);
     }
-    free(schema_sql);
     char *window_title = malloc(64);
     snprintf(window_title, 64, "Books - %s", db_name);
     return (sapp_desc){

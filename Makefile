@@ -17,8 +17,8 @@ clean:
 
 schema: src/schema.h
 
-src/schema.h:
-	xxd -i sql/schema.sql > src/schema.h
+src/schema.h: sql/schema.sql
+	xxd -i sql/schema.sql | sed 's/};/, 0x00\n};/' > src/schema.h
 
 update-deps: update-sokol update-cimgui
 	wget -O deps/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
