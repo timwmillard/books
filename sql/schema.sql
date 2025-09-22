@@ -9,7 +9,7 @@ create table if not exists business (
     date_format text not null default 'DD/MM/YY',
     currency text not null default 'AUD',
     gst_registered bool not null default false,
-    goods_sold bool not null,
+    goods_sold bool not null default false,
     next_reference int not null default 1
 );
 

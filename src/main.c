@@ -97,8 +97,15 @@ void draw_ui(void)
 
                 if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
                     sqlite3_bind_text(stmt, 1, state.data.business->name, -1, SQLITE_STATIC);
-                    sqlite3_step(stmt);
+                    int result = sqlite3_step(stmt);
+                    if (result != SQLITE_DONE) {
+                        fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(state.db));
+                    } else {
+                        printf("Business '%s' inserted successfully\n", state.data.business->name);
+                    }
                     sqlite3_finalize(stmt);
+                } else {
+                    fprintf(stderr, "Unable to prepare statement: %s\n", sqlite3_errmsg(state.db));
                 }
                 igCloseCurrentPopup();
             }
