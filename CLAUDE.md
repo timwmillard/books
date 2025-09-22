@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a C application called "books" that uses the Sokol libraries for cross-platform graphics and Dear ImGui (via cimgui) for GUI. The project is built with CMake and includes a Makefile wrapper for convenience.
+This is a C application called "books" - a cross-platform accounting/bookkeeping application that uses the Sokol libraries for graphics, Dear ImGui (via cimgui) for GUI, and SQLite for data storage. The project is built with CMake and includes a Makefile wrapper for convenience.
 
 ## Build System
 
@@ -25,38 +25,58 @@ make run                # Build and run the application
 ### Development
 ```bash
 make clean              # Remove build directory
-make update-deps        # Update all dependencies (sokol, imgui, cimgui)
+make update-deps        # Update all dependencies (sokol, imgui, cimgui, sqlite)
+make schema             # Regenerate schema.h from sql/schema.sql
 ```
 
 ### Direct CMake usage
 ```bash
 cmake -B build          # Configure build directory
 cmake --build build     # Build the project
-./build/books           # Run the executable
+./build/books [file.book]  # Run with optional database file (defaults to accouting.book)
 ```
 
 ## Architecture
 
+### Application Structure
+The application is a full accounting system with:
+- **Business Setup**: Modal dialog for initial business configuration
+- **Main Menu Bar**: File operations (New, Open, Save) and Debug menu
+- **Dockable Interface**: Uses ImGui docking for flexible window layout
+- **SQLite Integration**: Persistent storage for business data, accounts, and ledger entries
+
 ### Source Structure
-- `src/main.c` - Main application entry point (currently minimal)
-- `deps/deps.c` - Dependencies implementation file that includes all Sokol implementations
-- `deps/` - External dependencies (sokol headers, cimgui, imgui)
+- `src/main.c` - Main application with GUI, SQLite integration, and business logic
+- `src/schema.h` - Generated header containing embedded SQL schema (auto-generated from sql/schema.sql)
+- `deps/deps.c` - Sokol implementations
+- `deps/deps.cpp` - Additional C++ dependencies (cimgui)
+- `sql/schema.sql` - Database schema definition
+
+### Database Schema
+The application uses a double-entry bookkeeping system with three main tables:
+- **business**: Company information, settings, and configuration
+- **account**: Chart of accounts with types (asset, liability, equity, revenue, expense)
+- **ledger**: Transaction entries with debit/credit amounts and account references
 
 ### Key Dependencies
 - **Sokol**: Cross-platform libraries for app, graphics, audio, time, logging
 - **cimgui**: C bindings for Dear ImGui
 - **imgui**: Immediate mode GUI library (docking branch)
+- **SQLite3**: Embedded database for data persistence
 - **stb_image**: Image loading library
 
 ### Dependency Management
 Dependencies are managed via wget commands in the Makefile. The project uses:
 - Sokol from floooh/sokol master branch
-- ImGui from ocornut/imgui docking branch
+- ImGui from ocornut/imgui docking branch (specific commit)
 - cimgui from cimgui/cimgui docking_inter branch
+- SQLite3 amalgamation from sqlite.org
 
 ## Development Notes
 
 - The project uses clangd for language server support (configured in `.clangd`)
 - All Sokol implementations are included in `deps/deps.c` with `SOKOL_IMPL` defined
-- The main application is currently minimal - just prints "books" and exits
+- Schema is embedded as a byte array in `src/schema.h` and executed on startup
+- The `make schema` command regenerates the embedded schema from SQL source
 - Platform-specific backend selection is handled automatically by CMake
+- Database files use `.book` extension and are ignored by git
