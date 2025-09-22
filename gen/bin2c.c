@@ -60,12 +60,14 @@ int main(int argc, char **argv)
     fprintf(output, "const unsigned char %s_data[] = { ", name);
 
     while (fread(&data, 1, 1, input) > 0) {
+        if (length % 12 == 0) fprintf(output, "\n\t");
         fprintf(output, "0x%02x, ", data);
         length++;
     }
 
-    fprintf(output, "0x00 };\n");
-    fprintf(output, "const unsigned int %s_len = %u;\n", name, length);
+    fprintf(output, "0x00\n");
+    fprintf(output, "};\n");
+    fprintf(output, "const unsigned int %s_len = %u;\n\n", name, length);
 
     fclose(output);
 
