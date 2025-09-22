@@ -15,6 +15,11 @@ build:
 clean:
 	rm -rf build
 
+schema: src/schema.h
+
+src/schema.h:
+	xxd -i sql/schema.sql > src/schema.h
+
 update-deps: update-sokol update-cimgui
 	wget -O deps/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
 

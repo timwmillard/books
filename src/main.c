@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "sokol_app.h"
 #include "sokol_gfx.h"
@@ -11,6 +12,7 @@
 #include "sokol_imgui.h"
 
 #include "sqlite3.h"
+#include "schema.h"
 
 static struct {
     sg_pass_action pass_action;
@@ -126,6 +128,19 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         sqlite3_close(state.db);
         sapp_quit();
     }
+
+    // Execute embedded schema
+    char *schema_sql = malloc(sql_schema_sql_len + 1);
+    memcpy(schema_sql, sql_schema_sql, sql_schema_sql_len);
+    schema_sql[sql_schema_sql_len] = '\0';
+
+    char *err_msg = NULL;
+    rc = sqlite3_exec(state.db, schema_sql, NULL, NULL, &err_msg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Schema execution failed: %s\n", err_msg);
+        sqlite3_free(err_msg);
+    }
+    free(schema_sql);
     char *window_title = malloc(64);
     snprintf(window_title, 64, "Books - %s", db_name);
     return (sapp_desc){
