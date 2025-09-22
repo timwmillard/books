@@ -28,8 +28,8 @@ create table if not exists ledger (
     account_id bigint not null references account(id),
     reference text not null,
     description text not null,
-    debit numeric not null check (amount >= 0),
-    credit numeric not null check (amount >= 0),
+    debit numeric not null check (debit >= 0),
+    credit numeric not null check (credit >= 0),
     created_at timestamptz not null default current_timestamp
 );
 

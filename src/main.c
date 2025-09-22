@@ -14,12 +14,23 @@
 #include "sqlite3.h"
 #include "schema.h"
 
+/* Models */
+typedef struct {
+    char name[256];
+} Business;
+
+typedef struct {
+    Business *business;
+} Data;
+
 static struct {
     sg_pass_action pass_action;
     bool show_window;
     bool show_demo;
 
     sqlite3 *db;
+
+    Data data;
 } state = {0};
 
 void draw_ui(void)
@@ -63,6 +74,43 @@ void draw_ui(void)
 
         }
         igEnd();
+    }
+
+    if (state.data.business == NULL) {
+        // Allocate business object so we can use its name buffer
+        state.data.business = malloc(sizeof(Business));
+        memset(state.data.business->name, 0, sizeof(state.data.business->name));
+        igOpenPopup_Str("Business Setup", ImGuiPopupFlags_None);
+    }
+
+    // Business setup modal
+    if (igBeginPopupModal("Business Setup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        igText("Please enter your business name:");
+        igInputText("##business_name", state.data.business->name, sizeof(state.data.business->name), ImGuiInputTextFlags_None, NULL, NULL);
+
+        igSeparator();
+
+        if (igButton("Create", (ImVec2){80, 0})) {
+            if (strlen(state.data.business->name) > 0) {
+                sqlite3_stmt *stmt;
+                char *sql = "INSERT INTO business (name) VALUES (?)";
+
+                if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+                    sqlite3_bind_text(stmt, 1, state.data.business->name, -1, SQLITE_STATIC);
+                    sqlite3_step(stmt);
+                    sqlite3_finalize(stmt);
+                }
+                igCloseCurrentPopup();
+            }
+        }
+        igSameLine(0, -1);
+        if (igButton("Cancel", (ImVec2){80, 0})) {
+            free(state.data.business);
+            state.data.business = NULL;
+            igCloseCurrentPopup();
+        }
+
+        igEndPopup();
     }
 }
 
