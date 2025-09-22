@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
 include_directories(.)
 include_directories(deps)
 include_directories(deps/cimgui)
@@ -30,8 +29,10 @@ endif()
 # Add backend define
 add_definitions(${BACKEND})
 
-# Build cimgui as static library
-add_library(cimgui STATIC
+add_executable(books
+    src/main.c
+    deps/deps.c
+    deps/deps.cpp
     deps/cimgui/cimgui.cpp
     deps/cimgui/imgui/imgui.cpp
     deps/cimgui/imgui/imgui_draw.cpp
@@ -40,14 +41,5 @@ add_library(cimgui STATIC
     deps/cimgui/imgui/imgui_demo.cpp
 )
 
-target_include_directories(cimgui PUBLIC deps/cimgui)
-target_compile_features(cimgui PRIVATE cxx_std_11)
-
-add_executable(books
-    src/main.c
-    deps/deps.c
-    deps/deps.cpp
-)
-
-target_link_libraries(books cimgui ${PLATFORM_LIBS})
+target_link_libraries(books ${PLATFORM_LIBS})
 
