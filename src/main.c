@@ -136,6 +136,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         fprintf(stderr, "Schema execution failed: %s\n", err_msg);
         sqlite3_free(err_msg);
     }
+
     char *window_title = malloc(64);
     snprintf(window_title, 64, "Books - %s", db_name);
     return (sapp_desc){
