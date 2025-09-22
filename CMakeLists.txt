@@ -29,6 +29,22 @@ endif()
 # Add backend define
 add_definitions(${BACKEND})
 
+# Build bin2c tool for schema generation
+add_executable(bin2c gen/bin2c.c)
+set_target_properties(bin2c PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gen
+)
+
+# Generate schema.h using bin2c
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/schema.h
+    COMMAND $<TARGET_FILE:bin2c> ${CMAKE_SOURCE_DIR}/sql/schema.sql ${CMAKE_SOURCE_DIR}/src/schema.h sql_schema_sql
+    DEPENDS ${CMAKE_SOURCE_DIR}/sql/schema.sql bin2c
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Generating schema.h from sql/schema.sql using bin2c"
+)
+add_custom_target(generate_schema DEPENDS ${CMAKE_SOURCE_DIR}/src/schema.h)
+
 add_executable(books
     src/main.c
     deps/deps.c
@@ -41,6 +57,9 @@ add_executable(books
     deps/cimgui/imgui/imgui_demo.cpp
     deps/sqlite3.c
 )
+
+# Ensure schema.h is generated before building the executable
+add_dependencies(books generate_schema)
 
 target_link_libraries(books ${PLATFORM_LIBS})
 

@@ -186,7 +186,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 
     // Execute embedded schema
     char *err_msg = NULL;
-    rc = sqlite3_exec(state.db, (char*)sql_schema_sql, NULL, NULL, &err_msg);
+    rc = sqlite3_exec(state.db, (char*)sql_schema_sql_data, NULL, NULL, &err_msg);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "Schema execution failed: %s\n", err_msg);
         sqlite3_free(err_msg);
