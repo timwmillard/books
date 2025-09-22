@@ -39,6 +39,7 @@ add_executable(books
     deps/cimgui/imgui/imgui_tables.cpp
     deps/cimgui/imgui/imgui_widgets.cpp
     deps/cimgui/imgui/imgui_demo.cpp
+    deps/sqlite3.c
 )
 
 target_link_libraries(books ${PLATFORM_LIBS})

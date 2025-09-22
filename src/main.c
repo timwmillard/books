@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "sokol_app.h"
 #include "sokol_gfx.h"
 #include "sokol_glue.h"
@@ -8,10 +10,14 @@
 #include "cimgui.h"
 #include "sokol_imgui.h"
 
+#include "sqlite3.h"
+
 static struct {
     sg_pass_action pass_action;
     bool show_window;
     bool show_demo;
+
+    sqlite3 *db;
 } state = {0};
 
 void draw_ui(void)
@@ -110,6 +116,18 @@ void cleanup(void) {
 }
 
 sapp_desc sokol_main(int argc, char* argv[]) {
+    char *db_name = "accouting.book";
+    if (argc > 1) {
+        db_name = argv[1];
+    }
+    int rc = sqlite3_open(db_name, &state.db);
+    if (rc) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(state.db));
+        sqlite3_close(state.db);
+        sapp_quit();
+    }
+    char *window_title = malloc(64);
+    snprintf(window_title, 64, "Books - %s", db_name);
     return (sapp_desc){
         .init_cb = init,
         .frame_cb = frame,
@@ -117,6 +135,6 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         .event_cb = event,
         .width = 1200,
         .height = 800,
-        .window_title = "Books",
+        .window_title = window_title,
     };
 }
