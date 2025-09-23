@@ -161,11 +161,26 @@ void draw_ui(void)
     // Chart of Accounts Window
     if (state.show_accounts) {
         if (igBegin("Chart of Accounts", &state.show_accounts, ImGuiWindowFlags_None)) {
-            igText("Assets");
-            igText("Liabilities");
-            igText("Revenue");
-            igText("Expenses");
-            igText("Owners Equity");
+            if (igTreeNode_Str("Assets")) {
+                igSeparatorText("Current Assets");
+                igText("Cash");
+                igText("Accounts Receivable");
+                igTreePop();
+            }
+            if (igTreeNode_Str("Liabilities")) {
+                igSeparatorText("Current Liabilities");
+                igText("Accounts Payable");
+                igTreePop();
+            }
+            if (igTreeNode_Str("Revenue")) {
+                igTreePop();
+            }
+            if (igTreeNode_Str("Expenses")) {
+                igTreePop();
+            }
+            if (igTreeNode_Str("Owner's Equity")) {
+                igTreePop();
+            }
         }
         igEnd();
     }
