@@ -29,7 +29,7 @@ create table if not exists account (
 create table if not exists open_balance (
     account_id integer not null references account(id),
     balance numeric not null default 0,
-    from timestamptz
+    from_date timestamptz
 );
 
 create table if not exists ledger (
