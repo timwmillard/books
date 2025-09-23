@@ -146,6 +146,17 @@ void draw_ui(void)
             }
             igEndMenu();
         }
+        if (igBeginMenu("View", true)) {
+            if (igMenuItem_Bool("Reset Layout", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Zoom In", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Zoom Out", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Reset Zoom", "", false, true)) {
+            }
+            igEndMenu();
+        }
         if (igBeginMenu("Debug", true)) {
             if (igMenuItem_Bool("Demo", "", false, true)) {
                 state.show_demo = true;
@@ -161,12 +172,11 @@ void draw_ui(void)
 
     // Setup docking layout on first frame
     if (!state.dock_setup_done) {
-        igDockBuilderRemoveNode(dockspace_id);
         igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
         igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
 
-        ImGuiID dock_left = igDockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.3f, NULL, &dockspace_id);
-        igDockBuilderDockWindow("Chart of Accounts", dock_left);
+        igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
+        igDockBuilderDockWindow("Business Details", dockspace_id);
         igDockBuilderFinish(dockspace_id);
 
         state.dock_setup_done = true;
