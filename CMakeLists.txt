@@ -34,8 +34,6 @@ add_executable(bin2c gen/bin2c.c)
 set_target_properties(bin2c PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gen
 )
-
-# Generate schema.h using bin2c
 add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/src/schema.h
     COMMAND $<TARGET_FILE:bin2c> ${CMAKE_SOURCE_DIR}/sql/schema.sql ${CMAKE_SOURCE_DIR}/src/schema.h sql_schema_sql
