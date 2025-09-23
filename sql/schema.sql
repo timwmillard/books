@@ -22,7 +22,14 @@ create table if not exists account (
     description text not null default '',
     normal_balance text check (normal_balance in ('debit', 'credit')) not null,
     status text check (status in ('active', 'closed')) not null default 'active',
-    business_id bigint references business(id)
+    parent_id integer references account(id),
+    business_id integer references business(id)
+);
+
+create table if not exists open_balance (
+    account_id integer not null references account(id),
+    balance numeric not null default 0,
+    from timestamptz
 );
 
 create table if not exists ledger (
