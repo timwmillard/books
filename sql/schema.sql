@@ -1,5 +1,6 @@
 
 create table if not exists business (
+    id integer primary key,
     name text not null,
     business_type text,
     owners_name text,
@@ -14,22 +15,24 @@ create table if not exists business (
 );
 
 create table if not exists account (
-    id bigserial primary key,
+    id integer primary key,
     number text not null,
-    account_type text check (account_type in ('asset', 'liability', 'equity', 'revenue', 'expense')) not null,
+    type text check (type in ('asset', 'liability', 'equity', 'revenue', 'expense')) not null,
     name text not null,
     description text not null default '',
     normal_balance text check (normal_balance in ('debit', 'credit')) not null,
-    status text check (status in ('active', 'closed')) not null default 'active'
+    status text check (status in ('active', 'closed')) not null default 'active',
+    business_id bigint references business(id)
 );
 
 create table if not exists ledger (
-    id bigserial primary key,
-    account_id bigint not null references account(id),
+    id integer primary key,
+    account_id integer not null references account(id),
     reference text not null,
     description text not null,
     debit numeric not null check (debit >= 0),
     credit numeric not null check (credit >= 0),
-    created_at timestamptz not null default current_timestamp
+    created_at timestamptz not null default current_timestamp,
+    business_id integer references business(id)
 );
 

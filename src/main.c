@@ -14,18 +14,34 @@
 #include "sqlite3.h"
 #include "schema.h"
 
-/* Models */
+/*** Error Handling ***/
+
 typedef struct {
+    int code;
+    const char *msg;
+} Error;
+
+static Error ok = {0};
+
+Error error(int code, const char *msg) {return (Error){code, msg};}
+
+/*** Models ***/
+
+typedef struct {
+    long int id;
     char name[256];
 } Business;
 
 typedef struct {
-    Business *business;
+    Business business;
 } Data;
 
+/*** Global State ***/
 static struct {
     sg_pass_action pass_action;
-    bool show_window;
+    bool show_accounts;
+    bool show_business;
+
     bool show_demo;
 
     sqlite3 *db;
@@ -33,12 +49,54 @@ static struct {
     Data data;
 } state = {0};
 
+Error open_db(char *name)
+{
+    int rc = sqlite3_open(name, &state.db);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(state.db));
+        sqlite3_close(state.db);
+        return error(rc,  "open database error");
+    }
+
+    // Execute embedded schema
+    char *err_msg = NULL;
+    rc = sqlite3_exec(state.db, (char*)sql_schema_sql_data, NULL, NULL, &err_msg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Schema execution failed: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return error(rc, "schema execution failed");
+    }
+    return ok;
+}
+
+static int load_business(void *NotUsed, int argc, char **argv, char **azColName)
+{
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(azColName[i], "name") == 0) {
+            strcpy(state.data.business.name, argv[i]);
+        }
+    }
+    return 0;
+}
+
+void db_get_business()
+{
+    int rc;
+    char *zErrMsg = 0;
+    char *sql = "select * from business order by id desc limit 1";
+    rc = sqlite3_exec(state.db, sql, load_business, 0, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+}
+
 void draw_ui(void)
 {
+    // Main Menu
     if (igBeginMainMenuBar()) {
         if (igBeginMenu("File", true)) {
             if (igMenuItem_Bool("New", "Ctrl+N", false, true)) {
-                state.show_window = true;
                 // Handle new file
             }
             if (igMenuItem_Bool("Open", "Ctrl+O", false, true)) {
@@ -48,8 +106,42 @@ void draw_ui(void)
                 // Handle save file
             }
             igSeparator();
-            if (igMenuItem_Bool("Exit", "Alt+F4", false, true)) {
+            if (igMenuItem_Bool("Import", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Export", "", false, true)) {
+            }
+            igSeparator();
+            if (igMenuItem_Bool("Quit", "Ctrl+Q", false, true)) {
                 sapp_quit();
+            }
+            igEndMenu();
+        }
+        if (igBeginMenu("Accounting", true)) {
+            if (igMenuItem_Bool("Journal Entry", "Ctrl+J", false, true)) {
+            }
+            if (igMenuItem_Bool("Chart of Accounts", "", false, true)) {
+                state.show_accounts = true;
+            }
+            if (igMenuItem_Bool("General Ledger", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Bank Reconciliation", "", false, true)) {
+            }
+            igEndMenu();
+        }
+        if (igBeginMenu("Reports", true)) {
+            if (igMenuItem_Bool("Profit & Loss", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Balance Sheet", "", false, true)) {
+            }
+            if (igMenuItem_Bool("Cash Flow", "", false, true)) {
+            }
+            igEndMenu();
+        }
+        if (igBeginMenu("Business", true)) {
+            if (igMenuItem_Bool("Details", "", false, true)) {
+                state.show_business = true;
+                // state.show_window = true;
+                // Handle new file
             }
             igEndMenu();
         }
@@ -62,62 +154,58 @@ void draw_ui(void)
         igEndMainMenuBar();
     }
 
+    // Dockspace
     ImGuiID dockspace_id = igGetID_Str("MainDockSpace");
     igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), ImGuiDockNodeFlags_None, NULL);
 
-    if (state.show_demo) {
-        igShowDemoWindow(&state.show_window);
-    }
-
-    if (state.show_window) {
-        if (state.show_window && igBegin("Window", &state.show_window, ImGuiWindowFlags_None)) {
-
+    // Chart of Accounts Window
+    if (state.show_accounts) {
+        if (igBegin("Chart of Accounts", &state.show_accounts, ImGuiWindowFlags_None)) {
+            igText("Assets");
+            igText("Liabilities");
+            igText("Revenue");
+            igText("Expenses");
+            igText("Owners Equity");
         }
         igEnd();
     }
+    // Business Details Window
+    if (state.show_business) {
+        if (igBegin("Business Details", &state.show_business, ImGuiWindowFlags_None)) {
+            igText("Please enter your business name:");
+            igInputText("##business_name", state.data.business.name, sizeof(state.data.business.name), ImGuiInputTextFlags_None, NULL, NULL);
 
-    if (state.data.business == NULL) {
-        // Allocate business object so we can use its name buffer
-        state.data.business = malloc(sizeof(Business));
-        memset(state.data.business->name, 0, sizeof(state.data.business->name));
-        igOpenPopup_Str("Business Setup", ImGuiPopupFlags_None);
-    }
+            igSeparator();
 
-    // Business setup modal
-    if (igBeginPopupModal("Business Setup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-        igText("Please enter your business name:");
-        igInputText("##business_name", state.data.business->name, sizeof(state.data.business->name), ImGuiInputTextFlags_None, NULL, NULL);
-
-        igSeparator();
-
-        if (igButton("Create", (ImVec2){80, 0})) {
-            if (strlen(state.data.business->name) > 0) {
+            if (igButton("Save", (ImVec2){80, 0})) {
                 sqlite3_stmt *stmt;
                 char *sql = "INSERT INTO business (name) VALUES (?)";
 
                 if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
-                    sqlite3_bind_text(stmt, 1, state.data.business->name, -1, SQLITE_STATIC);
+                    sqlite3_bind_text(stmt, 1, state.data.business.name, -1, SQLITE_STATIC);
                     int result = sqlite3_step(stmt);
                     if (result != SQLITE_DONE) {
                         fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(state.db));
                     } else {
-                        printf("Business '%s' inserted successfully\n", state.data.business->name);
+                        printf("Business '%s' inserted successfully\n", state.data.business.name);
                     }
                     sqlite3_finalize(stmt);
                 } else {
                     fprintf(stderr, "Unable to prepare statement: %s\n", sqlite3_errmsg(state.db));
                 }
-                igCloseCurrentPopup();
+            }
+            igSameLine(0, -1);
+            if (igButton("Reset", (ImVec2){80, 0})) {
+                db_get_business();
+                // state.show_business = false;
             }
         }
-        igSameLine(0, -1);
-        if (igButton("Cancel", (ImVec2){80, 0})) {
-            free(state.data.business);
-            state.data.business = NULL;
-            igCloseCurrentPopup();
-        }
+        igEnd();
+    }
 
-        igEndPopup();
+    // Demo Window
+    if (state.show_demo) {
+        igShowDemoWindow(&state.show_demo);
     }
 }
 
@@ -148,7 +236,8 @@ void event(const sapp_event *ev)
 
 void init(void)
 {
-    state.show_window = true;
+    state.show_accounts = true;
+    state.show_business = true;
 
     sg_setup(&(sg_desc){
         .environment = sglue_environment(),
@@ -177,20 +266,15 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     if (argc > 1) {
         db_name = argv[1];
     }
-    int rc = sqlite3_open(db_name, &state.db);
-    if (rc) {
-        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(state.db));
-        sqlite3_close(state.db);
+
+    Error err;
+
+    err = open_db(db_name);
+    if (err.code) {
+        fprintf(stderr, "Open database error: %s\n", err.msg);
         sapp_quit();
     }
-
-    // Execute embedded schema
-    char *err_msg = NULL;
-    rc = sqlite3_exec(state.db, (char*)sql_schema_sql_data, NULL, NULL, &err_msg);
-    if (rc != SQLITE_OK) {
-        fprintf(stderr, "Schema execution failed: %s\n", err_msg);
-        sqlite3_free(err_msg);
-    }
+    db_get_business();
 
     char *window_title = malloc(64);
     snprintf(window_title, 64, "Books - %s", db_name);
