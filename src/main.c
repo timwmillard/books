@@ -43,6 +43,7 @@ static struct {
     bool show_business;
 
     bool show_demo;
+    bool dock_setup_done;
 
     sqlite3 *db;
 
@@ -157,6 +158,19 @@ void draw_ui(void)
     // Dockspace
     ImGuiID dockspace_id = igGetID_Str("MainDockSpace");
     igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), ImGuiDockNodeFlags_None, NULL);
+
+    // Setup docking layout on first frame
+    if (!state.dock_setup_done) {
+        igDockBuilderRemoveNode(dockspace_id);
+        igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+        igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
+
+        ImGuiID dock_left = igDockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.3f, NULL, &dockspace_id);
+        igDockBuilderDockWindow("Chart of Accounts", dock_left);
+        igDockBuilderFinish(dockspace_id);
+
+        state.dock_setup_done = true;
+    }
 
     // Chart of Accounts Window
     if (state.show_accounts) {
