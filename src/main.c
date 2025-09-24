@@ -21,7 +21,7 @@ typedef struct {
     const char *msg;
 } Error;
 
-static Error ok = {0};
+static Error Ok = {0};
 
 Error error(int code, const char *msg) {return (Error){code, msg};}
 
@@ -67,7 +67,7 @@ Error open_db(char *name)
         sqlite3_free(err_msg);
         return error(rc, "schema execution failed");
     }
-    return ok;
+    return Ok;
 }
 
 static int load_business(void *NotUsed, int argc, char **argv, char **azColName)
@@ -187,13 +187,6 @@ void draw_ui(void)
     // Setup docking layout on first frame
     if (!state.dock_setup_done) {
         ui_reset_layout(dockspace_id);
-        // igDockBuilderRemoveNode(dockspace_id);
-        // igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-        // igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
-        //
-        // igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
-        // igDockBuilderDockWindow("Business Details", dockspace_id);
-        // igDockBuilderFinish(dockspace_id);
 
         state.dock_setup_done = true;
     }
@@ -317,7 +310,7 @@ void cleanup(void) {
 }
 
 sapp_desc sokol_main(int argc, char* argv[]) {
-    char *db_name = "accouting.book";
+    char *db_name = "accounting.book";
     if (argc > 1) {
         db_name = argv[1];
     }

@@ -22,23 +22,22 @@ create table if not exists account (
     description text not null default '',
     normal_balance text check (normal_balance in ('debit', 'credit')) not null,
     status text check (status in ('active', 'closed')) not null default 'active',
-    parent_id integer references account(id),
-    business_id integer references business(id)
+    parent_id integer references account(id)
 );
 
 create table if not exists open_balance (
     account_id integer not null references account(id),
-    balance numeric not null default 0,
+    balance integer not null default 0,
     from_date timestamptz
 );
 
 create table if not exists journal (
     id integer primary key,
+    date date not null,
     account_id integer not null references account(id),
     reference text not null,
     description text not null,
-    amount numeric not null, -- debit(+), credit(-)
-    created_at timestamptz not null default current_timestamp,
-    business_id integer references business(id)
+    amount integer not null, -- debit(+), credit(-) amount in cents
+    created_at timestamptz not null default current_timestamp
 );
 

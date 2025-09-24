@@ -55,3 +55,13 @@ update-sqlite3:
 	unzip -j deps/sqlite-amalgamation.zip -d deps/
 	rm deps/sqlite-amalgamation.zip
 
+
+# Helpful utilities
+sql: FORCE
+	rlwrap --always-readline sqlite3 accounting.book
+
+sql-setup: FORCE
+	sqlite3 accounting.book < sql/setup.sql
+
+FORCE:
+
