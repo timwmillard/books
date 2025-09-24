@@ -32,13 +32,12 @@ create table if not exists open_balance (
     from_date timestamptz
 );
 
-create table if not exists ledger (
+create table if not exists journal (
     id integer primary key,
     account_id integer not null references account(id),
     reference text not null,
     description text not null,
-    debit numeric not null check (debit >= 0),
-    credit numeric not null check (credit >= 0),
+    amount numeric not null, -- debit(+), credit(-)
     created_at timestamptz not null default current_timestamp,
     business_id integer references business(id)
 );

@@ -149,6 +149,7 @@ void draw_ui(void)
         if (igBeginMenu("View", true)) {
             if (igMenuItem_Bool("Reset Layout", "", false, true)) {
             }
+            igSeparator();
             if (igMenuItem_Bool("Zoom In", "", false, true)) {
             }
             if (igMenuItem_Bool("Zoom Out", "", false, true)) {
