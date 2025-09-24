@@ -11,18 +11,18 @@ create table if not exists business (
     currency text not null default 'AUD',
     gst_registered bool not null default false,
     goods_sold bool not null default false,
+    journal_prefix text not null default 'GL',
     next_reference int not null default 1
 );
 
 create table if not exists account (
     id integer primary key,
-    number text not null,
     type text check (type in ('asset', 'liability', 'equity', 'revenue', 'expense')) not null,
     name text not null,
     description text not null default '',
     normal_balance text check (normal_balance in ('debit', 'credit')) not null,
     status text check (status in ('active', 'closed')) not null default 'active',
-    sub_account_id integer references account(id)
+    parent_id integer references account(id)
 );
 
 create table if not exists open_balance (
