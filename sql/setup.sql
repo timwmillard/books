@@ -35,7 +35,7 @@ values
     (4040, 'revenue', 'Training Services', 'credit', 4000),
 
     -- EXPENSES
-    (5000, 'expense', 'Operating Expenses', 'credit', null),
+    (5000, 'expense', 'Operating Expenses', 'debit', null),
     (5010, 'expense', 'Software & Subscriptions', 'debit', 5000),
     (5020, 'expense', 'Computer & Equipment', 'debit', 5000),
     (5030, 'expense', 'Internet & Phone', 'debit', 5000),
