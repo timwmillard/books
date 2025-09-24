@@ -92,8 +92,21 @@ void db_get_business()
     }
 }
 
+void ui_reset_layout(ImGuiID dockspace_id)
+{
+    igDockBuilderRemoveNode(dockspace_id);
+    igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
+
+    igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
+    igDockBuilderDockWindow("Business Details", dockspace_id);
+    igDockBuilderFinish(dockspace_id);
+}
+
 void draw_ui(void)
 {
+    ImGuiID dockspace_id = igGetID_Str("MainDockSpace");
+
     // Main Menu
     if (igBeginMainMenuBar()) {
         if (igBeginMenu("File", true)) {
@@ -122,6 +135,7 @@ void draw_ui(void)
             }
             if (igMenuItem_Bool("Chart of Accounts", "", false, true)) {
                 state.show_accounts = true;
+                igSetWindowFocus_Str("Chart of Accounts");
             }
             if (igMenuItem_Bool("General Ledger", "", false, true)) {
             }
@@ -141,13 +155,13 @@ void draw_ui(void)
         if (igBeginMenu("Business", true)) {
             if (igMenuItem_Bool("Details", "", false, true)) {
                 state.show_business = true;
-                // state.show_window = true;
-                // Handle new file
+                igSetWindowFocus_Str("Business Details");
             }
             igEndMenu();
         }
         if (igBeginMenu("View", true)) {
             if (igMenuItem_Bool("Reset Layout", "", false, true)) {
+                ui_reset_layout(dockspace_id);
             }
             igSeparator();
             if (igMenuItem_Bool("Zoom In", "", false, true)) {
@@ -168,17 +182,18 @@ void draw_ui(void)
     }
 
     // Dockspace
-    ImGuiID dockspace_id = igGetID_Str("MainDockSpace");
     igDockSpaceOverViewport(dockspace_id, igGetMainViewport(), ImGuiDockNodeFlags_None, NULL);
 
     // Setup docking layout on first frame
     if (!state.dock_setup_done) {
-        igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-        igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
-
-        igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
-        igDockBuilderDockWindow("Business Details", dockspace_id);
-        igDockBuilderFinish(dockspace_id);
+        ui_reset_layout(dockspace_id);
+        // igDockBuilderRemoveNode(dockspace_id);
+        // igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+        // igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
+        //
+        // igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
+        // igDockBuilderDockWindow("Business Details", dockspace_id);
+        // igDockBuilderFinish(dockspace_id);
 
         state.dock_setup_done = true;
     }
