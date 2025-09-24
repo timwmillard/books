@@ -1,6 +1,6 @@
 
 create table if not exists business (
-    id integer primary key,
+    id integer primary key check (id = 1),
     name text not null,
     business_type text,
     owners_name text,
@@ -22,7 +22,7 @@ create table if not exists account (
     description text not null default '',
     normal_balance text check (normal_balance in ('debit', 'credit')) not null,
     status text check (status in ('active', 'closed')) not null default 'active',
-    parent_id integer references account(id)
+    sub_account_id integer references account(id)
 );
 
 create table if not exists open_balance (

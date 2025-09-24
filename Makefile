@@ -57,11 +57,14 @@ update-sqlite3:
 
 
 # Helpful utilities
-sql: FORCE
+db: FORCE
 	rlwrap --always-readline sqlite3 accounting.book
 
-sql-setup: FORCE
+db-setup: FORCE
 	sqlite3 accounting.book < sql/setup.sql
+
+db-reset: FORCE
+	rm accounting.book
 
 FORCE:
 

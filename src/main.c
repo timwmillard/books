@@ -227,7 +227,7 @@ void draw_ui(void)
 
             if (igButton("Save", (ImVec2){80, 0})) {
                 sqlite3_stmt *stmt;
-                char *sql = "INSERT INTO business (name) VALUES (?)";
+                char *sql = "insert or replace into business (id, name) values (1, ?)";
 
                 if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
                     sqlite3_bind_text(stmt, 1, state.data.business.name, -1, SQLITE_STATIC);
@@ -235,7 +235,7 @@ void draw_ui(void)
                     if (result != SQLITE_DONE) {
                         fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(state.db));
                     } else {
-                        printf("Business '%s' inserted successfully\n", state.data.business.name);
+                        printf("Business '%s' updated successfully\n", state.data.business.name);
                     }
                     sqlite3_finalize(stmt);
                 } else {
