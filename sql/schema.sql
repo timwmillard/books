@@ -58,8 +58,8 @@ select
     entry.description,
     entry.reference,
     entry.created_at
-from journal_line line
-join journal_entry entry on line.journal_entry_id = entry.id
+from journal_entry entry
+join journal_line line on line.entry_id = entry.id
 join account on line.account_id = account.id
 order by entry.date, entry.id, line.id;
 
@@ -80,6 +80,7 @@ create table if not exists external_transaction (
     description text not null default '',
     external_account_id integer not null references external_account(id),
     journal_entry_id integer references journal_entry(id),
-    unique_id text unqiue -- TODO: should include external_account_id
+    unique_id text, -- TODO: should include external_account_id
+    unique(external_account_id, unique_id)
 );
 

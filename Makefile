@@ -64,7 +64,9 @@ db-setup: FORCE
 	sqlite3 accounting.book < sql/schema.sql
 	sqlite3 accounting.book < sql/setup.sql
 
-db-reset: FORCE
+db-reset: db-delete db-setup
+
+db-delete:
 	rm accounting.book
 
 FORCE:
