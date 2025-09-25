@@ -10,9 +10,7 @@ create table if not exists business (
     date_format text not null default 'DD/MM/YY',
     currency text not null default 'AUD',
     gst_registered bool not null default false,
-    goods_sold bool not null default false,
-    journal_prefix text not null default 'GL',
-    next_reference int not null default 1
+    goods_sold bool not null default false
 );
 
 create table if not exists account (
@@ -31,13 +29,57 @@ create table if not exists open_balance (
     from_date timestamptz
 );
 
-create table if not exists journal (
+create table if not exists journal_entry (
     id integer primary key,
     date date not null,
+    description text,
+    reference text,  -- invoice #, check #, etc.
+    created_at timestamp not null default current_timestamp
+);
+
+create table if not exists journal_line (
+    id integer primary key,
+    entry_id integer not null references journal_entry(id),
     account_id integer not null references account(id),
-    reference text not null,
-    description text not null,
-    amount integer not null, -- debit(+), credit(-) amount in cents
-    created_at timestamptz not null default current_timestamp
+    amount integer not null
+);
+
+drop view if exists ledger;
+create view ledger as
+select
+    line.id as line_id,
+    entry.id as entry_id,
+    entry.date,
+    line.account_id,
+    account.name as account_name,
+    account.type as account_type,
+    case when (amount > 0) then line.amount else 0 end as debit,
+    case when (amount < 0) then -line.amount else 0 end as credit,
+    entry.description,
+    entry.reference,
+    entry.created_at
+from journal_line line
+join journal_entry entry on line.journal_entry_id = entry.id
+join account on line.account_id = account.id
+order by entry.date, entry.id, line.id;
+
+
+-- Bank Reconciliation
+create table if not exists external_account (
+    id integer primary key,
+    name text not null,
+    description text not null default '',
+    status text check (status in ('active', 'closed')) not null default 'active',
+    account_id integer not null references account(id)
+);
+
+create table if not exists external_transaction (
+    id integer primary key,
+    date date not null,
+    amount integer not null,
+    description text not null default '',
+    external_account_id integer not null references external_account(id),
+    journal_entry_id integer references journal_entry(id),
+    unique_id text unqiue -- TODO: should include external_account_id
 );
 
