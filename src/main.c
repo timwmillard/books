@@ -28,9 +28,25 @@ Error error(int code, const char *msg) {return (Error){code, msg};}
 /*** Models ***/
 
 typedef struct {
-    long int id;
+    int id;
     char name[256];
 } Business;
+
+typedef enum {
+    ASSET,
+    LIABILITY,
+    EQUITY,
+    REVENUE,
+    EXPENSE
+} AccountType;
+
+typedef struct {
+    int id;
+    AccountType type;
+    char name[256];
+    char description[256];
+    int parent_id;
+} Account;
 
 typedef struct {
     Business business;
@@ -50,7 +66,7 @@ static struct {
     Data data;
 } state = {0};
 
-Error open_db(char *name)
+Error db_open(char *name)
 {
     int rc = sqlite3_open(name, &state.db);
     if (rc != SQLITE_OK) {
@@ -70,7 +86,7 @@ Error open_db(char *name)
     return Ok;
 }
 
-static int load_business(void *NotUsed, int argc, char **argv, char **azColName)
+static int load_business_cb(void *NotUsed, int argc, char **argv, char **azColName)
 {
     for (int i = 0; i < argc; i++) {
         if (strcmp(azColName[i], "name") == 0) {
@@ -85,15 +101,37 @@ void db_get_business()
     int rc;
     char *zErrMsg = 0;
     char *sql = "select * from business order by id desc limit 1";
-    rc = sqlite3_exec(state.db, sql, load_business, 0, &zErrMsg);
+    rc = sqlite3_exec(state.db, sql, load_business_cb, 0, &zErrMsg);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
     }
 }
 
+void db_save_business()
+{
+    sqlite3_stmt *stmt;
+    char *sql = "insert or replace into business (id, name) values (1, ?)";
+
+    if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, state.data.business.name, -1, SQLITE_STATIC);
+        int result = sqlite3_step(stmt);
+        if (result != SQLITE_DONE) {
+            fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(state.db));
+        } else {
+            printf("Business '%s' updated successfully\n", state.data.business.name);
+        }
+        sqlite3_finalize(stmt);
+    } else {
+        fprintf(stderr, "Unable to prepare statement: %s\n", sqlite3_errmsg(state.db));
+    }
+}
+
 void ui_reset_layout(ImGuiID dockspace_id)
 {
+    state.show_accounts = true;
+    state.show_business = true;
+
     igDockBuilderRemoveNode(dockspace_id);
     igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
     igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
@@ -226,21 +264,7 @@ void draw_ui(void)
             igSeparator();
 
             if (igButton("Save", (ImVec2){80, 0})) {
-                sqlite3_stmt *stmt;
-                char *sql = "insert or replace into business (id, name) values (1, ?)";
-
-                if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
-                    sqlite3_bind_text(stmt, 1, state.data.business.name, -1, SQLITE_STATIC);
-                    int result = sqlite3_step(stmt);
-                    if (result != SQLITE_DONE) {
-                        fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(state.db));
-                    } else {
-                        printf("Business '%s' updated successfully\n", state.data.business.name);
-                    }
-                    sqlite3_finalize(stmt);
-                } else {
-                    fprintf(stderr, "Unable to prepare statement: %s\n", sqlite3_errmsg(state.db));
-                }
+                db_save_business();
             }
             igSameLine(0, -1);
             if (igButton("Reset", (ImVec2){80, 0})) {
@@ -317,7 +341,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 
     Error err;
 
-    err = open_db(db_name);
+    err = db_open(db_name);
     if (err.code) {
         fprintf(stderr, "Open database error: %s\n", err.msg);
         sapp_quit();
