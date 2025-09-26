@@ -29,7 +29,7 @@ create table if not exists open_balance (
     from_date timestamptz
 );
 
-create table if not exists journal_entry (
+create table if not exists journal (
     id integer primary key,
     date date not null,
     description text,
@@ -39,7 +39,7 @@ create table if not exists journal_entry (
 
 create table if not exists journal_line (
     id integer primary key,
-    entry_id integer not null references journal_entry(id),
+    journal_id integer not null references journal(id),
     account_id integer not null references account(id),
     amount integer not null
 );
@@ -48,7 +48,7 @@ drop view if exists ledger;
 create view ledger as
 select
     line.id as line_id,
-    entry.id as entry_id,
+    entry.id as journal_id,
     entry.date,
     line.account_id,
     account.name as account_name,
@@ -58,8 +58,8 @@ select
     entry.description,
     entry.reference,
     entry.created_at
-from journal_entry entry
-join journal_line line on line.entry_id = entry.id
+from journal entry
+join journal_line line on line.journal_id = entry.id
 join account on line.account_id = account.id
 order by entry.date, entry.id, line.id;
 
