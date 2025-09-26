@@ -51,6 +51,21 @@ select
     entry.id as journal_id,
     entry.date,
     line.account_id,
+    line.amount,
+    entry.description,
+    entry.reference,
+    entry.created_at
+from journal entry
+join journal_line line on line.journal_id = entry.id
+order by entry.date, entry.id, line.id;
+
+drop view if exists general_ledger;
+create view general_ledger as
+select
+    line.id as line_id,
+    entry.id as journal_id,
+    entry.date,
+    line.account_id,
     account.name as account_name,
     account.type as account_type,
     case when (amount > 0) then line.amount else 0 end as debit,
@@ -62,7 +77,6 @@ from journal entry
 join journal_line line on line.journal_id = entry.id
 join account on line.account_id = account.id
 order by entry.date, entry.id, line.id;
-
 
 -- Bank Reconciliation
 create table if not exists external_account (

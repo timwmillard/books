@@ -64,6 +64,9 @@ db-setup: FORCE
 	sqlite3 accounting.book < sql/schema.sql
 	sqlite3 accounting.book < sql/setup.sql
 
+db-seed: FORCE
+	sqlite3 accounting.book < sql/seed.sql
+
 db-reset: db-delete db-setup
 
 db-delete:
