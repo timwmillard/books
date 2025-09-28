@@ -50,8 +50,8 @@ typedef enum {
 typedef struct {
     int id;
     AccountType type;
-    char name[256];
-    char description[256];
+    char name[MAX_TEXT_LEN];
+    char description[MAX_TEXT_LEN];
     int parent_id;
 } Account;
 
