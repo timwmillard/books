@@ -56,7 +56,23 @@ typedef struct {
 } Account;
 
 typedef struct {
+    char account_name[MAX_TEXT_LEN];
+    int debit;
+    int credit;
+    char description[MAX_TEXT_LEN];
+} LedgerRow;
+
+typedef struct {
+    LedgerRow *items;
+    size_t count;
+    size_t capacity;
+} Ledger;
+
+typedef struct {
     Business business;
+    Ledger ledger;
+
+    Arena arena;
 } Data;
 
 /*** Global State ***/
@@ -64,6 +80,7 @@ static struct {
     sg_pass_action pass_action;
     bool show_accounts;
     bool show_business;
+    bool show_general_ledger;
 
     bool show_demo;
     bool dock_setup_done;
@@ -101,6 +118,41 @@ static int load_business_cb(void *NotUsed, int argc, char **argv, char **azColNa
         }
     }
     return 0;
+}
+
+static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName)
+{
+    LedgerRow row;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(azColName[i], "account_name") == 0) {
+            strncpy(row.account_name, argv[i], MAX_TEXT_LEN);
+        }
+        if (strcmp(azColName[i], "description") == 0) {
+            strncpy(row.description, argv[i], MAX_TEXT_LEN);
+        }
+        if (strcmp(azColName[i], "debit") == 0) {
+            row.debit = atoi(argv[i]);
+        }
+        if (strcmp(azColName[i], "credit") == 0) {
+            row.credit = atoi(argv[i]);
+        }
+    }
+
+    arena_da_append(&state.data.arena, &state.data.ledger, row);
+    return 0;
+}
+
+void db_list_ledger()
+{
+    int rc;
+    char *zErrMsg = 0;
+    char *sql = "select * from general_ledger";
+    rc = sqlite3_exec(state.db, sql, load_ledger_cb, 0, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
 }
 
 void db_get_business()
@@ -145,6 +197,7 @@ void ui_reset_layout(ImGuiID dockspace_id)
 
     igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
     igDockBuilderDockWindow("Business Details", dockspace_id);
+    igDockBuilderDockWindow("General Ledger", dockspace_id);
     igDockBuilderFinish(dockspace_id);
 }
 
@@ -183,6 +236,8 @@ void draw_ui(void)
                 igSetWindowFocus_Str("Chart of Accounts");
             }
             if (igMenuItem_Bool("General Ledger", "", false, true)) {
+                state.show_general_ledger = true;
+                db_list_ledger();
             }
             if (igMenuItem_Bool("Bank Reconciliation", "", false, true)) {
             }
@@ -278,6 +333,44 @@ void draw_ui(void)
                 db_get_business();
                 // state.show_business = false;
             }
+        }
+        igEnd();
+    }
+
+    if (state.show_general_ledger) {
+        if (igBegin("General Ledger", &state.show_general_ledger, ImGuiWindowFlags_None)) {
+
+        int rc;
+        char *zErrMsg = 0;
+        char *sql = "select * from general_ledger";
+        rc = sqlite3_exec(state.db, sql, load_business_cb, 0, &zErrMsg);
+        if (rc != SQLITE_OK) {
+            fprintf(stderr, "SQL error: %s\n", zErrMsg);
+            sqlite3_free(zErrMsg);
+        }
+
+        char *headings[] = {"Account Name", "Description"};
+
+        if (igBeginTable("ledger", 4, 0, (ImVec2){0}, 0))
+        {
+            for (int row = 0; row < state.data.ledger.count; row++) {
+                igTableNextRow(0, 0);
+
+                igTableSetColumnIndex(0);
+                igText("%s", state.data.ledger.items[row].account_name);
+
+                igTableSetColumnIndex(1);
+                igText("%s", state.data.ledger.items[row].description);
+
+                igTableSetColumnIndex(2);
+                igText("%f", state.data.ledger.items[row].debit/100.0f);
+
+                igTableSetColumnIndex(3);
+                igText("%f", state.data.ledger.items[row].credit/100.0f);
+            }
+            igEndTable();
+        }
+
         }
         igEnd();
     }
