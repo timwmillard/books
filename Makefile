@@ -58,6 +58,10 @@ update-sqlite3:
 
 
 # Helpful utilities
+
+pg-format:
+	pg_format -i sql/*.sql
+
 db: FORCE
 	rlwrap --always-readline sqlite3 accounting.book
 
