@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "arena.h"
+
 #include "sokol_app.h"
 #include "sokol_gfx.h"
 #include "sokol_glue.h"
@@ -13,6 +15,9 @@
 
 #include "sqlite3.h"
 #include "schema.h"
+
+/*** Areana's ***/
+static Arena arena = {0};
 
 /*** Error Handling ***/
 
@@ -331,6 +336,8 @@ void init(void)
 void cleanup(void) {
     simgui_shutdown();
     sg_shutdown();
+
+    arena_free(&arena);
 }
 
 sapp_desc sokol_main(int argc, char* argv[]) {
@@ -348,7 +355,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     }
     db_get_business();
 
-    char *window_title = malloc(64);
+    char *window_title = arena_alloc(&arena,64);
     snprintf(window_title, 64, "Books - %s", db_name);
     return (sapp_desc){
         .init_cb = init,

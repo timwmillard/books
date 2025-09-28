@@ -22,6 +22,7 @@ src/schema.h: sql/schema.sql
 
 update-deps: update-sokol update-cimgui
 	wget -O deps/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+	wget -O deps/arena.h https://raw.githubusercontent.com/tsoding/arena/refs/heads/master/arena.h
 
 update-sokol:
 	wget -O deps/sokol_app.h https://raw.githubusercontent.com/floooh/sokol/master/sokol_app.h
