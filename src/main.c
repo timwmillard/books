@@ -355,8 +355,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     }
     db_get_business();
 
-    char *window_title = arena_alloc(&arena,64);
-    snprintf(window_title, 64, "Books - %s", db_name);
+    char *window_title = arena_sprintf(&arena,  "Books - %s", db_name);
     return (sapp_desc){
         .init_cb = init,
         .frame_cb = frame,
