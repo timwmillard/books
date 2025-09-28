@@ -107,7 +107,7 @@ void db_get_business()
 {
     int rc;
     char *zErrMsg = 0;
-    char *sql = "select * from business order by id desc limit 1";
+    char *sql = "SELECT * FROM business ORDER BY id DESC LIMIT 1";
     rc = sqlite3_exec(state.db, sql, load_business_cb, 0, &zErrMsg);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
@@ -118,7 +118,7 @@ void db_get_business()
 void db_save_business()
 {
     sqlite3_stmt *stmt;
-    char *sql = "insert or replace into business (id, name) values (1, ?)";
+    char *sql = "INSERT OR REPLACE INTO business (id, name) VALUES (1, ?)";
 
     if (sqlite3_prepare_v2(state.db, sql, -1, &stmt, NULL) == SQLITE_OK) {
         sqlite3_bind_text(stmt, 1, state.data.business.name, -1, SQLITE_STATIC);
