@@ -32,9 +32,11 @@ Error error(int code, const char *msg) {return (Error){code, msg};}
 
 /*** Models ***/
 
+#define MAX_TEXT_LEN 256
+
 typedef struct {
     int id;
-    char name[256];
+    char name[MAX_TEXT_LEN];
 } Business;
 
 typedef enum {
@@ -95,7 +97,7 @@ static int load_business_cb(void *NotUsed, int argc, char **argv, char **azColNa
 {
     for (int i = 0; i < argc; i++) {
         if (strcmp(azColName[i], "name") == 0) {
-            strcpy(state.data.business.name, argv[i]);
+            strncpy(state.data.business.name, argv[i], MAX_TEXT_LEN);
         }
     }
     return 0;
