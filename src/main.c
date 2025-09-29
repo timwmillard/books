@@ -344,7 +344,7 @@ void draw_ui(void)
 
     if (state.show_general_ledger) {
         if (igBegin("General Ledger", &state.show_general_ledger, ImGuiWindowFlags_None)) {
-            if (igBeginTable("ledger", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, (ImVec2){0}, 0)) {
+            if (igBeginTable("ledger", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable, (ImVec2){0}, 0)) {
                 igTableSetupColumn("Description", 0, 0, 0);
                 igTableSetupColumn("Account ID", 0, 0, 0);
                 igTableSetupColumn("Account", 0, 0, 0);
@@ -353,10 +353,12 @@ void draw_ui(void)
 
                 igTableHeadersRow();
                 for (int row = 0; row < state.data.ledger.count; row++) {
+                    igPushID_Int(row);
                     igTableNextRow(0, 20.0f);
 
                     igTableSetColumnIndex(0);
                     igText("%s", state.data.ledger.items[row].description);
+                    igSmallButton("Edit");
 
                     igTableSetColumnIndex(1);
                     igText("%d", state.data.ledger.items[row].account_id);
@@ -389,6 +391,7 @@ void draw_ui(void)
                         igSetCursorPosX(cursor_x + column_width - text_size.x);
                         igText("%s", amount_str);
                     }
+                    igPopID();
                 }
                 igEndTable();
             }
