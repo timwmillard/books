@@ -345,6 +345,7 @@ void draw_ui(void)
                 igTableSetupColumn("Description", 0, 0, 0);
                 igTableSetupColumn("Debit", 0, 0, 0);
                 igTableSetupColumn("Credit", 0, 0, 0);
+
                 igTableHeadersRow();
                 for (int row = 0; row < state.data.ledger.count; row++) {
                     igTableNextRow(0, 0);
@@ -355,11 +356,31 @@ void draw_ui(void)
                     igTableSetColumnIndex(1);
                     igText("%s", state.data.ledger.items[row].description);
 
-                    igTableSetColumnIndex(2);
-                    igText("%.2f", state.data.ledger.items[row].debit/100.0f);
+                    igTableSetColumnIndex(2); // Amount column
+                    {
+                        float column_width = igGetColumnWidth(2);
+                        char amount_str[32];
+                        float amount =  state.data.ledger.items[row].debit/100.0f;
+                        snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
+                        ImVec2 text_size;
+                        igCalcTextSize(&text_size, amount_str, NULL, false, -1.0f);
+                        float cursor_x = igGetCursorPosX();
+                        igSetCursorPosX(cursor_x + column_width - text_size.x);
+                        igText("%s", amount_str);
+                    }
 
-                    igTableSetColumnIndex(3);
-                    igText("%.2f", state.data.ledger.items[row].credit/100.0f);
+                    igTableSetColumnIndex(3); // Amount column
+                    {
+                        float column_width = igGetColumnWidth(3);
+                        char amount_str[32];
+                        float amount =  state.data.ledger.items[row].credit/100.0f;
+                        snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
+                        ImVec2 text_size;
+                        igCalcTextSize(&text_size, amount_str, NULL, false, -1.0f);
+                        float cursor_x = igGetCursorPosX();
+                        igSetCursorPosX(cursor_x + column_width - text_size.x);
+                        igText("%s", amount_str);
+                    }
                 }
                 igEndTable();
             }
