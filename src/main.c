@@ -57,9 +57,9 @@ typedef struct {
 
 typedef struct {
     char account_name[MAX_TEXT_LEN];
+    char description[MAX_TEXT_LEN];
     int debit;
     int credit;
-    char description[MAX_TEXT_LEN];
 } LedgerRow;
 
 typedef struct {
@@ -195,9 +195,10 @@ void ui_reset_layout(ImGuiID dockspace_id)
     igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
     igDockBuilderSetNodeSize(dockspace_id, igGetMainViewport()->Size);
 
-    igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
     igDockBuilderDockWindow("Business Details", dockspace_id);
+    igDockBuilderDockWindow("Chart of Accounts", dockspace_id);
     igDockBuilderDockWindow("General Ledger", dockspace_id);
+    igDockBuilderDockWindow("Dear ImGui Demo", dockspace_id);
     igDockBuilderFinish(dockspace_id);
 }
 
@@ -339,38 +340,29 @@ void draw_ui(void)
 
     if (state.show_general_ledger) {
         if (igBegin("General Ledger", &state.show_general_ledger, ImGuiWindowFlags_None)) {
+            if (igBeginTable("ledger", 4, 0, (ImVec2){0}, 0)) {
+                igTableSetupColumn("Account", 0, 0, 0);
+                igTableSetupColumn("Description", 0, 0, 0);
+                igTableSetupColumn("Debit", 0, 0, 0);
+                igTableSetupColumn("Credit", 0, 0, 0);
+                igTableHeadersRow();
+                for (int row = 0; row < state.data.ledger.count; row++) {
+                    igTableNextRow(0, 0);
 
-        int rc;
-        char *zErrMsg = 0;
-        char *sql = "select * from general_ledger";
-        rc = sqlite3_exec(state.db, sql, load_business_cb, 0, &zErrMsg);
-        if (rc != SQLITE_OK) {
-            fprintf(stderr, "SQL error: %s\n", zErrMsg);
-            sqlite3_free(zErrMsg);
-        }
+                    igTableSetColumnIndex(0);
+                    igText("%s", state.data.ledger.items[row].account_name);
 
-        char *headings[] = {"Account Name", "Description"};
+                    igTableSetColumnIndex(1);
+                    igText("%s", state.data.ledger.items[row].description);
 
-        if (igBeginTable("ledger", 4, 0, (ImVec2){0}, 0))
-        {
-            for (int row = 0; row < state.data.ledger.count; row++) {
-                igTableNextRow(0, 0);
+                    igTableSetColumnIndex(2);
+                    igText("%.2f", state.data.ledger.items[row].debit/100.0f);
 
-                igTableSetColumnIndex(0);
-                igText("%s", state.data.ledger.items[row].account_name);
-
-                igTableSetColumnIndex(1);
-                igText("%s", state.data.ledger.items[row].description);
-
-                igTableSetColumnIndex(2);
-                igText("%f", state.data.ledger.items[row].debit/100.0f);
-
-                igTableSetColumnIndex(3);
-                igText("%f", state.data.ledger.items[row].credit/100.0f);
+                    igTableSetColumnIndex(3);
+                    igText("%.2f", state.data.ledger.items[row].credit/100.0f);
+                }
+                igEndTable();
             }
-            igEndTable();
-        }
-
         }
         igEnd();
     }
@@ -410,6 +402,7 @@ void init(void)
 {
     state.show_accounts = true;
     state.show_business = true;
+    state.show_general_ledger = true;
 
     sg_setup(&(sg_desc){
         .environment = sglue_environment(),
@@ -449,6 +442,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         sapp_quit();
     }
     db_get_business();
+    db_list_ledger();
 
     char *window_title = arena_sprintf(&arena,  "Books - %s", db_name);
     return (sapp_desc){
