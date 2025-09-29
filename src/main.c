@@ -56,6 +56,7 @@ typedef struct {
 } Account;
 
 typedef struct {
+    int account_id;
     char account_name[MAX_TEXT_LEN];
     char description[MAX_TEXT_LEN];
     int debit;
@@ -125,6 +126,9 @@ static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName
     LedgerRow row;
 
     for (int i = 0; i < argc; i++) {
+        if (strcmp(azColName[i], "account_id") == 0) {
+            row.account_id = atoi(argv[i]);
+        }
         if (strcmp(azColName[i], "account_name") == 0) {
             strncpy(row.account_name, argv[i], MAX_TEXT_LEN);
         }
@@ -340,25 +344,29 @@ void draw_ui(void)
 
     if (state.show_general_ledger) {
         if (igBegin("General Ledger", &state.show_general_ledger, ImGuiWindowFlags_None)) {
-            if (igBeginTable("ledger", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, (ImVec2){0}, 0)) {
-                igTableSetupColumn("Account", 0, 0, 0);
+            if (igBeginTable("ledger", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, (ImVec2){0}, 0)) {
                 igTableSetupColumn("Description", 0, 0, 0);
+                igTableSetupColumn("Account ID", 0, 0, 0);
+                igTableSetupColumn("Account", 0, 0, 0);
                 igTableSetupColumn("Debit", 0, 0, 0);
                 igTableSetupColumn("Credit", 0, 0, 0);
 
                 igTableHeadersRow();
                 for (int row = 0; row < state.data.ledger.count; row++) {
-                    igTableNextRow(0, 25.0f);
+                    igTableNextRow(0, 20.0f);
 
                     igTableSetColumnIndex(0);
-                    igText("%s", state.data.ledger.items[row].account_name);
-
-                    igTableSetColumnIndex(1);
                     igText("%s", state.data.ledger.items[row].description);
 
-                    igTableSetColumnIndex(2); // Amount column
-                    {
-                        float column_width = igGetColumnWidth(2);
+                    igTableSetColumnIndex(1);
+                    igText("%d", state.data.ledger.items[row].account_id);
+
+                    igTableSetColumnIndex(2);
+                    igText("%s", state.data.ledger.items[row].account_name);
+
+                    igTableSetColumnIndex(3);
+                    if (state.data.ledger.items[row].debit > 0) {
+                        float column_width = igGetColumnWidth(3);
                         char amount_str[32];
                         float amount =  state.data.ledger.items[row].debit/100.0f;
                         snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
@@ -369,9 +377,9 @@ void draw_ui(void)
                         igText("%s", amount_str);
                     }
 
-                    igTableSetColumnIndex(3); // Amount column
-                    {
-                        float column_width = igGetColumnWidth(3);
+                    igTableSetColumnIndex(4);
+                    if (state.data.ledger.items[row].credit > 0) {
+                        float column_width = igGetColumnWidth(4);
                         char amount_str[32];
                         float amount =  state.data.ledger.items[row].credit/100.0f;
                         snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
