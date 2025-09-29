@@ -340,7 +340,7 @@ void draw_ui(void)
 
     if (state.show_general_ledger) {
         if (igBegin("General Ledger", &state.show_general_ledger, ImGuiWindowFlags_None)) {
-            if (igBeginTable("ledger", 4, 0, (ImVec2){0}, 0)) {
+            if (igBeginTable("ledger", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, (ImVec2){0}, 0)) {
                 igTableSetupColumn("Account", 0, 0, 0);
                 igTableSetupColumn("Description", 0, 0, 0);
                 igTableSetupColumn("Debit", 0, 0, 0);
@@ -348,7 +348,7 @@ void draw_ui(void)
 
                 igTableHeadersRow();
                 for (int row = 0; row < state.data.ledger.count; row++) {
-                    igTableNextRow(0, 0);
+                    igTableNextRow(0, 25.0f);
 
                     igTableSetColumnIndex(0);
                     igText("%s", state.data.ledger.items[row].account_name);
