@@ -73,7 +73,7 @@ typedef struct {
     Business business;
     Ledger ledger;
 
-    Arena arena;
+    Arena ledger_arena;
 } Data;
 
 /*** Global State ***/
@@ -143,12 +143,14 @@ static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName
         }
     }
 
-    arena_da_append(&state.data.arena, &state.data.ledger, row);
+    arena_da_append(&state.data.ledger_arena, &state.data.ledger, row);
     return 0;
 }
 
 void db_list_ledger()
 {
+    memset(&state.data.ledger, 0, sizeof(state.data.ledger));
+
     int rc;
     char *zErrMsg = 0;
     char *sql = "select * from general_ledger";
@@ -194,6 +196,7 @@ void ui_reset_layout(ImGuiID dockspace_id)
 {
     state.show_accounts = true;
     state.show_business = true;
+    state.show_general_ledger = true;
 
     igDockBuilderRemoveNode(dockspace_id);
     igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
@@ -243,6 +246,7 @@ void draw_ui(void)
             if (igMenuItem_Bool("General Ledger", "", false, true)) {
                 state.show_general_ledger = true;
                 db_list_ledger();
+                igSetWindowFocus_Str("General Ledger");
             }
             if (igMenuItem_Bool("Bank Reconciliation", "", false, true)) {
             }
