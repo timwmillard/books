@@ -144,13 +144,13 @@ static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName
     JournalLine line = {0};
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(azColName[i], "line_id") == 0) {
+        if (strcmp(azColName[i], "line_id") == 0 && argv[i]) {
             line.id = atoi(argv[i]);
         }
-        if (strcmp(azColName[i], "journal_id") == 0) {
+        if (strcmp(azColName[i], "journal_id") == 0 && argv[i]) {
             entry.id = atoi(argv[i]);
         }
-        if (strcmp(azColName[i], "account_id") == 0) {
+        if (strcmp(azColName[i], "account_id") == 0 && argv[i]) {
             line.account_id = atoi(argv[i]);
         }
         if (strcmp(azColName[i], "account_name") == 0) {
@@ -159,10 +159,10 @@ static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName
         if (strcmp(azColName[i], "description") == 0) {
             strncpy(entry.description, argv[i], MAX_TEXT_LEN);
         }
-        if (strcmp(azColName[i], "debit") == 0) {
+        if (strcmp(azColName[i], "debit") == 0 && argv[i]) {
             line.debit = atoi(argv[i]);
         }
-        if (strcmp(azColName[i], "credit") == 0) {
+        if (strcmp(azColName[i], "credit") == 0 && argv[i]) {
             line.credit = atoi(argv[i]);
         }
     }
@@ -202,10 +202,10 @@ static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColNam
 {
     Account account = {0};
     for (int i = 0; i < argc; i++) {
-        if (strcmp(azColName[i], "id") == 0) {
+        if (strcmp(azColName[i], "id") == 0 && argv[i]) {
             account.id = atoi(argv[i]);
         }
-        if (strcmp(azColName[i], "parent_id") == 0) {
+        if (strcmp(azColName[i], "parent_id") == 0 && argv[i]) {
             account.parent_id = atoi(argv[i]);
         }
         if (strcmp(azColName[i], "name") == 0) {
