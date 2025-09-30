@@ -87,8 +87,10 @@ typedef struct {
 typedef struct {
     Business business;
     Ledger ledger;
+    ChartOfAccounts accounts;
 
     Arena ledger_arena;
+    Arena accounts_arena;
 } Data;
 
 /*** Global State ***/
@@ -190,6 +192,45 @@ void db_list_ledger()
     char *zErrMsg = 0;
     char *sql = "select * from general_ledger";
     rc = sqlite3_exec(state.db, sql, load_ledger_cb, 0, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+}
+
+static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColName)
+{
+    Account account;
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(azColName[i], "id") == 0) {
+            account.id = atoi(argv[i]);
+        }
+        if (strcmp(azColName[i], "parent_id") == 0) {
+            account.parent_id = atoi(argv[i]);
+        }
+        if (strcmp(azColName[i], "name") == 0) {
+            strncpy(account.name, argv[i], MAX_TEXT_LEN);
+        }
+    }
+
+    for (int i = 0; i < state.data.accounts.count; i++) {
+        if (state.data.accounts.items[i].id == account.parent_id) {
+            account.parent = &state.data.accounts.items[i];
+        }
+    }
+    arena_da_append(&state.data.accounts_arena, &state.data.accounts, account);
+    return 0;
+}
+
+void db_list_accounts()
+{
+    arena_reset(&state.data.ledger_arena);
+    memset(&state.data.ledger, 0, sizeof(state.data.ledger));
+
+    int rc;
+    char *zErrMsg = 0;
+    char *sql = "select * from account";
+    rc = sqlite3_exec(state.db, sql, load_account_cb, 0, &zErrMsg);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
