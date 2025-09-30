@@ -200,7 +200,7 @@ void db_list_ledger()
 
 static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColName)
 {
-    Account account;
+    Account account = {0};
     for (int i = 0; i < argc; i++) {
         if (strcmp(azColName[i], "id") == 0) {
             account.id = atoi(argv[i]);
@@ -216,6 +216,7 @@ static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColNam
     for (int i = 0; i < state.data.accounts.count; i++) {
         if (state.data.accounts.items[i].id == account.parent_id) {
             account.parent = &state.data.accounts.items[i];
+            break;
         }
     }
     arena_da_append(&state.data.accounts_arena, &state.data.accounts, account);
@@ -224,8 +225,8 @@ static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColNam
 
 void db_list_accounts()
 {
-    arena_reset(&state.data.ledger_arena);
-    memset(&state.data.ledger, 0, sizeof(state.data.ledger));
+    arena_reset(&state.data.accounts_arena);
+    memset(&state.data.accounts, 0, sizeof(state.data.accounts));
 
     int rc;
     char *zErrMsg = 0;
@@ -567,6 +568,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     }
     db_get_business();
     db_list_ledger();
+    db_list_accounts();
 
     char *window_title = arena_sprintf(&arena,  "Books - %s", db_name);
     return (sapp_desc){

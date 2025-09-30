@@ -7,6 +7,10 @@ run: cmake-build
 cmake-build: build
 	@cmake --build build
 
+debug:
+	@cmake -B build -DCMAKE_BUILD_TYPE=Debug && make cmake-build
+	@lldb ./build/books
+
 # build directory
 build:
 	mkdir -p build
