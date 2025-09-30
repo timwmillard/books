@@ -269,7 +269,7 @@ static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColNam
                 account.type = EQUITY;
             else if (strcmp(argv[i], "revenue") == 0)
                 account.type = REVENUE;
-            else if (strcmp(argv[i], "expence") == 0)
+            else if (strcmp(argv[i], "expense") == 0)
                 account.type = EXPENSE;
         }
         if (strcmp(azColName[i], "parent_id") == 0 && argv[i]) {
@@ -469,23 +469,36 @@ void draw_ui(void)
     if (state.show_accounts) {
         if (igBegin("Chart of Accounts", &state.show_accounts, ImGuiWindowFlags_None)) {
             if (igTreeNode_Str("Assets")) {
-                igSeparatorText("Current Assets");
-                igText("Cash");
-                igText("Accounts Receivable");
+                for (int i = 0; i < array_count(state.data.accounts_tree.asset); i++) {
+                    igText(state.data.accounts_tree.asset[i].name);
+                }
+                // igSeparatorText("Current Assets");
+                // igText("Cash");
+                // igText("Accounts Receivable");
                 igTreePop();
             }
             if (igTreeNode_Str("Liabilities")) {
-                igSeparatorText("Current Liabilities");
-                igText("Accounts Payable");
-                igTreePop();
-            }
-            if (igTreeNode_Str("Revenue")) {
-                igTreePop();
-            }
-            if (igTreeNode_Str("Expenses")) {
+                for (int i = 0; i < array_count(state.data.accounts_tree.liability); i++) {
+                    igText(state.data.accounts_tree.liability[i].name);
+                }
                 igTreePop();
             }
             if (igTreeNode_Str("Owner's Equity")) {
+                for (int i = 0; i < array_count(state.data.accounts_tree.equity); i++) {
+                    igText(state.data.accounts_tree.equity[i].name);
+                }
+                igTreePop();
+            }
+            if (igTreeNode_Str("Revenue")) {
+                for (int i = 0; i < array_count(state.data.accounts_tree.revenue); i++) {
+                    igText(state.data.accounts_tree.revenue[i].name);
+                }
+                igTreePop();
+            }
+            if (igTreeNode_Str("Expenses")) {
+                for (int i = 0; i < array_count(state.data.accounts_tree.expense); i++) {
+                    igText(state.data.accounts_tree.expense[i].name);
+                }
                 igTreePop();
             }
         }
