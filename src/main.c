@@ -16,6 +16,42 @@
 #include "sqlite3.h"
 #include "schema.h"
 
+/*** Dynamic Array ***/
+// typedef void *(Allocator)(void *ptr, size_t size);
+
+// stretchy buffer
+// init: NULL 
+// free: array_free() 
+// push_back: array_push() 
+// size: array_count() 
+#define array_free(a)         ((a) ? free(array__raw(a)),0 : 0)
+#define array_push(a,v)       (array__maybegrow(a,1), (a)[array__n(a)++] = (v))
+#define array_count(a)        ((a) ? array__n(a) : 0)
+#define array_capacity(a)     ((a) ? array__m(a) : 0)
+#define array_add(a,n)        (array__maybegrow(a,n), array__n(a)+=(n), &(a)[array__n(a)-(n)])
+#define array_last(a)         ((a)[array__n(a)-1])
+
+#include <stdlib.h>
+#define array__raw(a) ((int *) (a) - 2)
+#define array__m(a)   array__raw(a)[0]
+#define array__n(a)   array__raw(a)[1]
+
+#define array__needgrow(a,n)  ((a)==0 || array__n(a)+n >= array__m(a))
+#define array__maybegrow(a,n) (array__needgrow(a,(n)) ? array__grow(a,n) : 0)
+#define array__grow(a,n)  array__growf((void **) &(a), (n), sizeof(*(a)))
+
+static void array__growf(void **arr, int increment, int itemsize)
+{
+	int m = *arr ? 2*array__m(*arr)+increment : increment+1;
+	void *p = reallocf(*arr ? array__raw(*arr) : 0, itemsize * m + sizeof(int)*2);
+	assert(p);
+	if (p) {
+		if (!*arr) ((int *) p)[1] = 0;
+		*arr = (void *) ((int *) p + 2);
+		array__m(*arr) = m;
+	}
+}
+
 /*** Areana's ***/
 static Arena arena = {0};
 
@@ -62,6 +98,24 @@ typedef struct {
     size_t capacity;
 } ChartOfAccounts;
 
+typedef struct AccountNode {
+    int id;
+    AccountType type;
+    char name[MAX_TEXT_LEN];
+    char description[MAX_TEXT_LEN];
+
+    struct AccountNode *children;
+} AccountNode;
+
+typedef struct {
+    AccountNode *asset;
+    AccountNode *liability;
+    AccountNode *equity;
+    AccountNode *revenue;
+    AccountNode *expense;
+
+} AccountsTree;
+
 typedef struct {
     int id;
     int account_id;
@@ -88,6 +142,7 @@ typedef struct {
     Business business;
     Ledger ledger;
     ChartOfAccounts accounts;
+    AccountsTree accounts_tree;
 
     Arena ledger_arena;
     Arena accounts_arena;
@@ -205,11 +260,26 @@ static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColNam
         if (strcmp(azColName[i], "id") == 0 && argv[i]) {
             account.id = atoi(argv[i]);
         }
+        if (strcmp(azColName[i], "type") == 0 && argv[i]) {
+            if (strcmp(argv[i], "asset") == 0)
+                account.type = ASSET;
+            else if (strcmp(argv[i], "liability") == 0)
+                account.type = LIABILITY;
+            else if (strcmp(argv[i], "equity") == 0)
+                account.type = EQUITY;
+            else if (strcmp(argv[i], "revenue") == 0)
+                account.type = REVENUE;
+            else if (strcmp(argv[i], "expence") == 0)
+                account.type = EXPENSE;
+        }
         if (strcmp(azColName[i], "parent_id") == 0 && argv[i]) {
             account.parent_id = atoi(argv[i]);
         }
         if (strcmp(azColName[i], "name") == 0) {
             strncpy(account.name, argv[i], MAX_TEXT_LEN);
+        }
+        if (strcmp(azColName[i], "description") == 0) {
+            strncpy(account.description, argv[i], MAX_TEXT_LEN);
         }
     }
 
@@ -235,6 +305,24 @@ void db_list_accounts()
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
+    }
+
+    for (int i = 0; i < state.data.accounts.count; i++) {
+        Account account = state.data.accounts.items[i];
+        AccountNode node = {0};
+        node.id = account.id,
+        strncpy(node.name, account.name, MAX_TEXT_LEN);
+        strncpy(node.description, account.description, MAX_TEXT_LEN);
+        if (account.type == ASSET && account.parent_id == 0)
+            array_push(state.data.accounts_tree.asset, node);
+        else if (account.type == LIABILITY && account.parent_id == 0)
+            array_push(state.data.accounts_tree.liability, node);
+        else if (account.type == EQUITY && account.parent_id == 0)
+            array_push(state.data.accounts_tree.equity, node);
+        else if (account.type == REVENUE && account.parent_id == 0)
+            array_push(state.data.accounts_tree.revenue, node);
+        else if (account.type == EXPENSE && account.parent_id == 0)
+            array_push(state.data.accounts_tree.expense, node);
     }
 }
 
