@@ -261,16 +261,11 @@ static int load_account_cb(void *NotUsed, int argc, char **argv, char **azColNam
             account.id = atoi(argv[i]);
         }
         if (strcmp(azColName[i], "type") == 0 && argv[i]) {
-            if (strcmp(argv[i], "asset") == 0)
-                account.type = ASSET;
-            else if (strcmp(argv[i], "liability") == 0)
-                account.type = LIABILITY;
-            else if (strcmp(argv[i], "equity") == 0)
-                account.type = EQUITY;
-            else if (strcmp(argv[i], "revenue") == 0)
-                account.type = REVENUE;
-            else if (strcmp(argv[i], "expense") == 0)
-                account.type = EXPENSE;
+            if (strcmp(argv[i], "asset") == 0) account.type = ASSET;
+            else if (strcmp(argv[i], "liability") == 0) account.type = LIABILITY;
+            else if (strcmp(argv[i], "equity") == 0) account.type = EQUITY;
+            else if (strcmp(argv[i], "revenue") == 0) account.type = REVENUE;
+            else if (strcmp(argv[i], "expense") == 0) account.type = EXPENSE;
         }
         if (strcmp(azColName[i], "parent_id") == 0 && argv[i]) {
             account.parent_id = atoi(argv[i]);
@@ -313,16 +308,36 @@ void db_list_accounts()
         node.id = account.id,
         strncpy(node.name, account.name, MAX_TEXT_LEN);
         strncpy(node.description, account.description, MAX_TEXT_LEN);
-        if (account.type == ASSET && account.parent_id == 0)
-            array_push(state.data.accounts_tree.asset, node);
-        else if (account.type == LIABILITY && account.parent_id == 0)
-            array_push(state.data.accounts_tree.liability, node);
-        else if (account.type == EQUITY && account.parent_id == 0)
-            array_push(state.data.accounts_tree.equity, node);
-        else if (account.type == REVENUE && account.parent_id == 0)
-            array_push(state.data.accounts_tree.revenue, node);
-        else if (account.type == EXPENSE && account.parent_id == 0)
-            array_push(state.data.accounts_tree.expense, node);
+        if (account.parent == NULL) {
+            switch (account.type) {
+                case ASSET: array_push(state.data.accounts_tree.asset, node);
+                case LIABILITY: array_push(state.data.accounts_tree.liability, node);
+                case EQUITY: array_push(state.data.accounts_tree.equity, node);
+                case REVENUE: array_push(state.data.accounts_tree.revenue, node);
+                case EXPENSE: array_push(state.data.accounts_tree.expense, node);
+            }
+        } else {
+
+            AccountNode *tree;
+
+            switch (account.type) {
+                case ASSET: tree = state.data.accounts_tree.asset;
+                case LIABILITY: tree = state.data.accounts_tree.liability;
+                case EQUITY: tree = state.data.accounts_tree.equity;
+                case REVENUE: tree = state.data.accounts_tree.revenue;
+                case EXPENSE: tree = state.data.accounts_tree.expense;
+            }
+
+
+            // does parent node exist (create new node)
+            AccountNode parent_node = {0};
+            parent_node.id = account.parent->id,
+            strncpy(parent_node.name, account.parent->name, MAX_TEXT_LEN);
+            strncpy(parent_node.description, account.parent->description, MAX_TEXT_LEN);
+            // else fine parent node
+
+            // attch node to parent->children
+        }
     }
 }
 
