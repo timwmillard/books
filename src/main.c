@@ -384,18 +384,23 @@ void draw_ui(void)
 
                 igTableHeadersRow();
                 for (int e = 0; e < state.data.ledger.count; e++) {
+                    int col = -1;
                     JournalEntry *entry = &state.data.ledger.items[e];
+                    igTableNextRow(0, 30.0f);
+                    igTableSetColumnIndex(++col);
+                    igText("%s", entry->description);
                     for (int l = 0; l < entry->count; l++) {
+                        int col = -1;
                         JournalLine *line = &entry->items[l];
                         igPushID_Int(e+l);
-                        igTableNextRow(0, 20.0f);
-                        int col = -1;
+
+                        igTableNextRow(0, 0.0f);
 
                         igTableSetColumnIndex(++col);
-                        if (l==0) {
-                            igText("%s", entry->description);
-                            // igSmallButton("Edit");
-                        }
+                        // if (l==0) {
+                        //     igText("%s", entry->description);
+                        //     // igSmallButton("Edit");
+                        // }
 
                         igTableSetColumnIndex(++col);
                         igText("%d", line->account_id);
