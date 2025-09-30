@@ -56,15 +56,23 @@ typedef struct {
 } Account;
 
 typedef struct {
+    int id;
     int account_id;
     char account_name[MAX_TEXT_LEN];
-    char description[MAX_TEXT_LEN];
     int debit;
     int credit;
-} LedgerRow;
+} JournalLine;
 
 typedef struct {
-    LedgerRow *items;
+    int id;
+    char description[MAX_TEXT_LEN];
+    JournalLine *items;
+    size_t count;
+    size_t capacity;
+} JournalEntry;
+
+typedef struct {
+    JournalEntry *items;
     size_t count;
     size_t capacity;
 } Ledger;
@@ -123,27 +131,46 @@ static int load_business_cb(void *NotUsed, int argc, char **argv, char **azColNa
 
 static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName)
 {
-    LedgerRow row;
+    JournalEntry entry = {0};
+    JournalLine line = {0};
 
     for (int i = 0; i < argc; i++) {
+        if (strcmp(azColName[i], "line_id") == 0) {
+            line.id = atoi(argv[i]);
+        }
+        if (strcmp(azColName[i], "journal_id") == 0) {
+            entry.id = atoi(argv[i]);
+        }
         if (strcmp(azColName[i], "account_id") == 0) {
-            row.account_id = atoi(argv[i]);
+            line.account_id = atoi(argv[i]);
         }
         if (strcmp(azColName[i], "account_name") == 0) {
-            strncpy(row.account_name, argv[i], MAX_TEXT_LEN);
+            strncpy(line.account_name, argv[i], MAX_TEXT_LEN);
         }
         if (strcmp(azColName[i], "description") == 0) {
-            strncpy(row.description, argv[i], MAX_TEXT_LEN);
+            strncpy(entry.description, argv[i], MAX_TEXT_LEN);
         }
         if (strcmp(azColName[i], "debit") == 0) {
-            row.debit = atoi(argv[i]);
+            line.debit = atoi(argv[i]);
         }
         if (strcmp(azColName[i], "credit") == 0) {
-            row.credit = atoi(argv[i]);
+            line.credit = atoi(argv[i]);
         }
     }
 
-    arena_da_append(&state.data.ledger_arena, &state.data.ledger, row);
+    JournalEntry *entry_ptr = NULL;
+    for (int i = 0; i < state.data.ledger.count; i++) {
+        if (state.data.ledger.items[i].id == entry.id) {
+            entry_ptr = &state.data.ledger.items[i];
+            break;
+        }
+    }
+    if (entry_ptr == NULL) {
+        arena_da_append(&state.data.ledger_arena, &state.data.ledger, entry);
+        entry_ptr = &state.data.ledger.items[state.data.ledger.count - 1];
+    }
+    arena_da_append(&state.data.ledger_arena, entry_ptr, line);
+
     return 0;
 }
 
@@ -356,46 +383,53 @@ void draw_ui(void)
                 igTableSetupColumn("Credit", 0, 0, 0);
 
                 igTableHeadersRow();
-                for (int row = 0; row < state.data.ledger.count; row++) {
-                    igPushID_Int(row);
-                    igTableNextRow(0, 20.0f);
+                for (int e = 0; e < state.data.ledger.count; e++) {
+                    JournalEntry *entry = &state.data.ledger.items[e];
+                    for (int l = 0; l < entry->count; l++) {
+                        JournalLine *line = &entry->items[l];
+                        igPushID_Int(e+l);
+                        igTableNextRow(0, 20.0f);
+                        int col = -1;
 
-                    igTableSetColumnIndex(0);
-                    igText("%s", state.data.ledger.items[row].description);
-                    igSmallButton("Edit");
+                        igTableSetColumnIndex(++col);
+                        if (l==0) {
+                            igText("%s", entry->description);
+                            // igSmallButton("Edit");
+                        }
 
-                    igTableSetColumnIndex(1);
-                    igText("%d", state.data.ledger.items[row].account_id);
+                        igTableSetColumnIndex(++col);
+                        igText("%d", line->account_id);
 
-                    igTableSetColumnIndex(2);
-                    igText("%s", state.data.ledger.items[row].account_name);
+                        igTableSetColumnIndex(++col);
+                        igText("%s", line->account_name);
 
-                    igTableSetColumnIndex(3);
-                    if (state.data.ledger.items[row].debit > 0) {
-                        float column_width = igGetColumnWidth(3);
-                        char amount_str[32];
-                        float amount =  state.data.ledger.items[row].debit/100.0f;
-                        snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
-                        ImVec2 text_size;
-                        igCalcTextSize(&text_size, amount_str, NULL, false, -1.0f);
-                        float cursor_x = igGetCursorPosX();
-                        igSetCursorPosX(cursor_x + column_width - text_size.x);
-                        igText("%s", amount_str);
+                        igTableSetColumnIndex(++col);
+                        if (line->debit > 0) {
+                            float column_width = igGetColumnWidth(col);
+                            char amount_str[32];
+                            float amount =  line->debit/100.0f;
+                            snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
+                            ImVec2 text_size;
+                            igCalcTextSize(&text_size, amount_str, NULL, false, -1.0f);
+                            float cursor_x = igGetCursorPosX();
+                            igSetCursorPosX(cursor_x + column_width - text_size.x);
+                            igText("%s", amount_str);
+                        }
+
+                        igTableSetColumnIndex(++col);
+                        if (line->credit > 0) {
+                            float column_width = igGetColumnWidth(col);
+                            char amount_str[32];
+                            float amount =  line->credit/100.0f;
+                            snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
+                            ImVec2 text_size;
+                            igCalcTextSize(&text_size, amount_str, NULL, false, -1.0f);
+                            float cursor_x = igGetCursorPosX();
+                            igSetCursorPosX(cursor_x + column_width - text_size.x);
+                            igText("%s", amount_str);
+                        }
+                        igPopID();
                     }
-
-                    igTableSetColumnIndex(4);
-                    if (state.data.ledger.items[row].credit > 0) {
-                        float column_width = igGetColumnWidth(4);
-                        char amount_str[32];
-                        float amount =  state.data.ledger.items[row].credit/100.0f;
-                        snprintf(amount_str, sizeof(amount_str), "$%.2f", amount);
-                        ImVec2 text_size;
-                        igCalcTextSize(&text_size, amount_str, NULL, false, -1.0f);
-                        float cursor_x = igGetCursorPosX();
-                        igSetCursorPosX(cursor_x + column_width - text_size.x);
-                        igText("%s", amount_str);
-                    }
-                    igPopID();
                 }
                 igEndTable();
             }
