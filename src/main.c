@@ -47,13 +47,20 @@ typedef enum {
     EXPENSE
 } AccountType;
 
-typedef struct {
+typedef struct Account {
     int id;
     AccountType type;
     char name[MAX_TEXT_LEN];
     char description[MAX_TEXT_LEN];
     int parent_id;
+    struct Account *parent;
 } Account;
+
+typedef struct {
+    Account *items;
+    size_t count;
+    size_t capacity;
+} ChartOfAccounts;
 
 typedef struct {
     int id;
@@ -176,6 +183,7 @@ static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName
 
 void db_list_ledger()
 {
+    arena_reset(&state.data.ledger_arena);
     memset(&state.data.ledger, 0, sizeof(state.data.ledger));
 
     int rc;
