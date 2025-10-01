@@ -107,14 +107,16 @@ typedef struct AccountNode {
     struct AccountNode *children;
 } AccountNode;
 
-typedef struct {
-    AccountNode *asset;
-    AccountNode *liability;
-    AccountNode *equity;
-    AccountNode *revenue;
-    AccountNode *expense;
 
-} AccountsTree;
+AccountNode *find_account(AccountNode *tree, int find_id)
+{
+    for (int i = 0; i < array_count(tree); i++) {
+        if (tree[i].id == find_id ) return &tree[i];
+        AccountNode *found = find_account(tree[i].children, find_id);
+        if (found) return found;
+    }
+    return NULL;
+}
 
 typedef struct {
     int id;
@@ -140,12 +142,14 @@ typedef struct {
 
 typedef struct {
     Business business;
-    Ledger ledger;
-    ChartOfAccounts accounts;
-    AccountsTree accounts_tree;
 
+    Ledger ledger;
     Arena ledger_arena;
+
+    ChartOfAccounts accounts;
+    AccountNode *account_root;
     Arena accounts_arena;
+
 } Data;
 
 /*** Global State ***/
@@ -308,32 +312,29 @@ void db_list_accounts()
         node.id = account.id,
         strncpy(node.name, account.name, MAX_TEXT_LEN);
         strncpy(node.description, account.description, MAX_TEXT_LEN);
+
+         // root node
         if (account.parent == NULL) {
-            switch (account.type) {
-                case ASSET: array_push(state.data.accounts_tree.asset, node);
-                case LIABILITY: array_push(state.data.accounts_tree.liability, node);
-                case EQUITY: array_push(state.data.accounts_tree.equity, node);
-                case REVENUE: array_push(state.data.accounts_tree.revenue, node);
-                case EXPENSE: array_push(state.data.accounts_tree.expense, node);
-            }
+           array_push(state.data.account_root, node);
+
+        // child node
         } else {
-
-            AccountNode *tree;
-
-            switch (account.type) {
-                case ASSET: tree = state.data.accounts_tree.asset;
-                case LIABILITY: tree = state.data.accounts_tree.liability;
-                case EQUITY: tree = state.data.accounts_tree.equity;
-                case REVENUE: tree = state.data.accounts_tree.revenue;
-                case EXPENSE: tree = state.data.accounts_tree.expense;
+            AccountNode *parent_node = find_account(state.data.account_root, account.parent->id);
+            if (parent_node) {
+                array_push(parent_node, node);
+            } else {
+                AccountNode parent_node = {0};
+                parent_node.id = account.parent->id,
+                strncpy(parent_node.name, account.parent->name, MAX_TEXT_LEN);
+                strncpy(parent_node.description, account.parent->description, MAX_TEXT_LEN);
             }
-
+            
 
             // does parent node exist (create new node)
-            AccountNode parent_node = {0};
-            parent_node.id = account.parent->id,
-            strncpy(parent_node.name, account.parent->name, MAX_TEXT_LEN);
-            strncpy(parent_node.description, account.parent->description, MAX_TEXT_LEN);
+            // AccountNode parent_node = {0};
+            // parent_node.id = account.parent->id,
+            // strncpy(parent_node.name, account.parent->name, MAX_TEXT_LEN);
+            // strncpy(parent_node.description, account.parent->description, MAX_TEXT_LEN);
             // else fine parent node
 
             // attch node to parent->children
