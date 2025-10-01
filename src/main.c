@@ -17,7 +17,6 @@
 #include "schema.h"
 
 /*** Dynamic Array ***/
-// typedef void *(Allocator)(void *ptr, size_t size);
 
 // stretchy buffer
 // init: NULL 
@@ -30,11 +29,13 @@
 #define array_capacity(a)     ((a) ? array__m(a) : 0)
 #define array_add(a,n)        (array__maybegrow(a,n), array__n(a)+=(n), &(a)[array__n(a)-(n)])
 #define array_last(a)         ((a)[array__n(a)-1])
+#define array_arena(a, al)    (array__o(a) = al)
 
 #include <stdlib.h>
-#define array__raw(a) ((int *) (a) - 2)
-#define array__m(a)   array__raw(a)[0]
-#define array__n(a)   array__raw(a)[1]
+#define array__raw(a) ((size_t *) (a) - 3)
+#define array__m(a)   array__raw(a)[0] // count
+#define array__n(a)   array__raw(a)[1] // capacity
+#define array__o(a)   array__raw(a)[2] // arena
 
 #define array__needgrow(a,n)  ((a)==0 || array__n(a)+n >= array__m(a))
 #define array__maybegrow(a,n) (array__needgrow(a,(n)) ? array__grow(a,n) : 0)
@@ -43,7 +44,11 @@
 static void array__growf(void **arr, int increment, int itemsize)
 {
 	int m = *arr ? 2*array__m(*arr)+increment : increment+1;
-	void *p = reallocf(*arr ? array__raw(*arr) : 0, itemsize * m + sizeof(int)*2);
+    void *p;
+    if (array__o(*arr))
+        p = arena_realloc((Arena*)array__o(*arr), *arr ? array__raw(*arr) : 0, array__n(*arr), itemsize * m + sizeof(size_t)*3);
+    else
+        p = reallocf(*arr ? array__raw(*arr) : 0, itemsize * m + sizeof(size_t)*3);
 	assert(p);
 	if (p) {
 		if (!*arr) ((int *) p)[1] = 0;
@@ -484,39 +489,39 @@ void draw_ui(void)
     // Chart of Accounts Window
     if (state.show_accounts) {
         if (igBegin("Chart of Accounts", &state.show_accounts, ImGuiWindowFlags_None)) {
-            if (igTreeNode_Str("Assets")) {
-                for (int i = 0; i < array_count(state.data.accounts_tree.asset); i++) {
-                    igText(state.data.accounts_tree.asset[i].name);
-                }
-                // igSeparatorText("Current Assets");
-                // igText("Cash");
-                // igText("Accounts Receivable");
-                igTreePop();
-            }
-            if (igTreeNode_Str("Liabilities")) {
-                for (int i = 0; i < array_count(state.data.accounts_tree.liability); i++) {
-                    igText(state.data.accounts_tree.liability[i].name);
-                }
-                igTreePop();
-            }
-            if (igTreeNode_Str("Owner's Equity")) {
-                for (int i = 0; i < array_count(state.data.accounts_tree.equity); i++) {
-                    igText(state.data.accounts_tree.equity[i].name);
-                }
-                igTreePop();
-            }
-            if (igTreeNode_Str("Revenue")) {
-                for (int i = 0; i < array_count(state.data.accounts_tree.revenue); i++) {
-                    igText(state.data.accounts_tree.revenue[i].name);
-                }
-                igTreePop();
-            }
-            if (igTreeNode_Str("Expenses")) {
-                for (int i = 0; i < array_count(state.data.accounts_tree.expense); i++) {
-                    igText(state.data.accounts_tree.expense[i].name);
-                }
-                igTreePop();
-            }
+            // if (igTreeNode_Str("Assets")) {
+            //     for (int i = 0; i < array_count(state.data.accounts_tree.asset); i++) {
+            //         igText(state.data.accounts_tree.asset[i].name);
+            //     }
+            //     // igSeparatorText("Current Assets");
+            //     // igText("Cash");
+            //     // igText("Accounts Receivable");
+            //     igTreePop();
+            // }
+            // if (igTreeNode_Str("Liabilities")) {
+            //     for (int i = 0; i < array_count(state.data.accounts_tree.liability); i++) {
+            //         igText(state.data.accounts_tree.liability[i].name);
+            //     }
+            //     igTreePop();
+            // }
+            // if (igTreeNode_Str("Owner's Equity")) {
+            //     for (int i = 0; i < array_count(state.data.accounts_tree.equity); i++) {
+            //         igText(state.data.accounts_tree.equity[i].name);
+            //     }
+            //     igTreePop();
+            // }
+            // if (igTreeNode_Str("Revenue")) {
+            //     for (int i = 0; i < array_count(state.data.accounts_tree.revenue); i++) {
+            //         igText(state.data.accounts_tree.revenue[i].name);
+            //     }
+            //     igTreePop();
+            // }
+            // if (igTreeNode_Str("Expenses")) {
+            //     for (int i = 0; i < array_count(state.data.accounts_tree.expense); i++) {
+            //         igText(state.data.accounts_tree.expense[i].name);
+            //     }
+            //     igTreePop();
+            // }
         }
         igEnd();
     }
@@ -685,7 +690,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     }
     db_get_business();
     db_list_ledger();
-    db_list_accounts();
+    // db_list_accounts();
 
     char *window_title = arena_sprintf(&arena,  "Books - %s", db_name);
     return (sapp_desc){
