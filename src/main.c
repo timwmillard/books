@@ -29,12 +29,12 @@
 #define array_capacity(a)     ((a) ? array__m(a) : 0)
 #define array_add(a,n)        (array__maybegrow(a,n), array__n(a)+=(n), &(a)[array__n(a)-(n)])
 #define array_last(a)         ((a)[array__n(a)-1])
-#define array_arena(a, al)    (array__o(a) = al)
+#define array_arena(a, al)    (array__maybegrow(a,1), (array__o(a) = (size_t)al))
 
 #include <stdlib.h>
 #define array__raw(a) ((size_t *) (a) - 3)
-#define array__m(a)   array__raw(a)[0] // count
-#define array__n(a)   array__raw(a)[1] // capacity
+#define array__m(a)   array__raw(a)[0] // capacity
+#define array__n(a)   array__raw(a)[1] // count
 #define array__o(a)   array__raw(a)[2] // arena
 
 #define array__needgrow(a,n)  ((a)==0 || array__n(a)+n >= array__m(a))
@@ -44,15 +44,17 @@
 static void array__growf(void **arr, int increment, int itemsize)
 {
 	int m = *arr ? 2*array__m(*arr)+increment : increment+1;
+    size_t newsz = itemsize * m + sizeof(size_t)*3;
     void *p;
-    if (array__o(*arr))
-        p = arena_realloc((Arena*)array__o(*arr), *arr ? array__raw(*arr) : 0, array__n(*arr), itemsize * m + sizeof(size_t)*3);
-    else
-        p = reallocf(*arr ? array__raw(*arr) : 0, itemsize * m + sizeof(size_t)*3);
+    if (*arr && array__o(*arr)) {
+        size_t oldsz = itemsize * array__m(*arr) + sizeof(size_t)*3;
+        p = arena_realloc((Arena*)array__o(*arr), *arr ? array__raw(*arr) : 0, oldsz, newsz);
+    } else
+        p = reallocf(*arr ? array__raw(*arr) : 0, newsz);
 	assert(p);
 	if (p) {
 		if (!*arr) ((int *) p)[1] = 0;
-		*arr = (void *) ((int *) p + 2);
+		*arr = (void *) ((size_t *) p + 3);
 		array__m(*arr) = m;
 	}
 }
@@ -134,15 +136,15 @@ typedef struct {
 typedef struct {
     int id;
     char description[MAX_TEXT_LEN];
-    JournalLine *items;
-    size_t count;
-    size_t capacity;
+    JournalLine *lines;
+    // size_t count;
+    // size_t capacity;
 } JournalEntry;
 
 typedef struct {
-    JournalEntry *items;
-    size_t count;
-    size_t capacity;
+    JournalEntry *entries;
+    // size_t count;
+    // size_t capacity;
 } Ledger;
 
 typedef struct {
@@ -205,6 +207,7 @@ static int load_business_cb(void *NotUsed, int argc, char **argv, char **azColNa
 static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName)
 {
     JournalEntry entry = {0};
+
     JournalLine line = {0};
 
     for (int i = 0; i < argc; i++) {
@@ -232,17 +235,18 @@ static int load_ledger_cb(void *NotUsed, int argc, char **argv, char **azColName
     }
 
     JournalEntry *entry_ptr = NULL;
-    for (int i = 0; i < state.data.ledger.count; i++) {
-        if (state.data.ledger.items[i].id == entry.id) {
-            entry_ptr = &state.data.ledger.items[i];
+    for (int i = 0; i < array_count(state.data.ledger.entries); i++) {
+        if (state.data.ledger.entries[i].id == entry.id) {
+            entry_ptr = &state.data.ledger.entries[i];
             break;
         }
     }
     if (entry_ptr == NULL) {
-        arena_da_append(&state.data.ledger_arena, &state.data.ledger, entry);
-        entry_ptr = &state.data.ledger.items[state.data.ledger.count - 1];
+        array_push(state.data.ledger.entries, entry);
+        entry_ptr = &array_last(state.data.ledger.entries);
+        array_arena(entry_ptr->lines, &state.data.ledger_arena);
     }
-    arena_da_append(&state.data.ledger_arena, entry_ptr, line);
+    array_push(entry_ptr->lines, line);
 
     return 0;
 }
@@ -251,6 +255,7 @@ void db_list_ledger()
 {
     arena_reset(&state.data.ledger_arena);
     memset(&state.data.ledger, 0, sizeof(state.data.ledger));
+    array_arena(state.data.ledger.entries, &state.data.ledger_arena);
 
     int rc;
     char *zErrMsg = 0;
@@ -555,15 +560,15 @@ void draw_ui(void)
                 igTableSetupColumn("Credit", 0, 0, 0);
 
                 igTableHeadersRow();
-                for (int e = 0; e < state.data.ledger.count; e++) {
+                for (int e = 0; e < array_count(state.data.ledger.entries); e++) {
                     int col = -1;
-                    JournalEntry *entry = &state.data.ledger.items[e];
+                    JournalEntry *entry = &state.data.ledger.entries[e];
                     igTableNextRow(0, 30.0f);
                     igTableSetColumnIndex(++col);
                     igText("%s", entry->description);
-                    for (int l = 0; l < entry->count; l++) {
+                    for (int l = 0; l < array_count(entry->lines); l++) {
                         int col = -1;
-                        JournalLine *line = &entry->items[l];
+                        JournalLine *line = &entry->lines[l];
                         igPushID_Int(e+l);
 
                         igTableNextRow(0, 0.0f);
